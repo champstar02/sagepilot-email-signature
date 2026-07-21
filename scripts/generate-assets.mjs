@@ -122,11 +122,11 @@ const tileSeq = [
 ];
 
 /* ------------------------------------------------------- full logo lockup
- * The site's whole logo (mark + "sagepilot" wordmark) on the brand mint plate.
- * The plate matters: the wordmark's "Sage" is near-black, and email clients
- * invert TEXT in dark mode but never images — on a dark background a bare
- * wordmark would vanish. The mint plate also matches the hero card and the
- * avatar tile, so the set reads as one system. The robot still blinks.
+ * The site's whole logo (mark + "sagepilot" wordmark), bare on transparency
+ * at its natural 128x30 — no plate (user direction: cleaner). The robot
+ * still blinks. NOTE: "Sage" is near-black, and email clients invert TEXT in
+ * dark mode but never images, so on dark backgrounds that word goes dim;
+ * "pilot" and the mark stay bright green either way.
  */
 const logoInner = readFileSync(
   "/Users/tharunbalaji/Desktop/Work/Projects/sagepilot-website/public/logo.svg",
@@ -138,17 +138,14 @@ const logoInner = readFileSync(
 
 const LOGO_W = 128; // logo.svg viewBox
 const LOGO_H = 30;
-const LOGO_SCALE = 1.75; // 2x asset, wordmark drawn at ~112px display width
-const LOGO_PAD_X = 28;
-const LOGO_PAD_Y = 18;
-const LOCKUP_W = Math.round(LOGO_W * LOGO_SCALE + LOGO_PAD_X * 2);
-const LOCKUP_H = Math.round(LOGO_H * LOGO_SCALE + LOGO_PAD_Y * 2);
+const LOGO_SCALE = 2; // 2x asset -> 128x30 display, the logo's natural size
+const LOCKUP_W = LOGO_W * LOGO_SCALE;
+const LOCKUP_H = LOGO_H * LOGO_SCALE;
 
+// Bare logo on transparency — no plate, no padding.
 function lockupSvg(faceOpts) {
   return `<svg width="${LOCKUP_W}" height="${LOCKUP_H}" viewBox="0 0 ${LOCKUP_W} ${LOCKUP_H}" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>${MINT}</defs>
-  <rect x="1.5" y="1.5" width="${LOCKUP_W - 3}" height="${LOCKUP_H - 3}" rx="20" fill="url(#mint)" stroke="#C4E8D4" stroke-width="3"/>
-  <g transform="translate(${LOGO_PAD_X} ${LOGO_PAD_Y}) scale(${LOGO_SCALE})">${applyFace(logoInner, faceOpts)}</g>
+  <g transform="scale(${LOGO_SCALE})">${applyFace(logoInner, faceOpts)}</g>
 </svg>`;
 }
 const lockupPng = (f) => sharp(Buffer.from(lockupSvg(f))).png().toBuffer();
