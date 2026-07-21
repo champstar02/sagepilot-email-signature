@@ -340,23 +340,45 @@ function esc(s) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-// Selected badges as one email-safe row of images (a table, so spacing holds
-// up in Outlook). Returns "" when nothing is selected.
+// Selected badges as email-safe rows of images (tables, so spacing holds up in
+// Outlook — CSS flex-wrap is not an option here). Wraps onto extra lines once
+// a row would exceed the signature width. Returns "" when none are selected.
+const SIG_WIDTH = 420;
+const BADGE_GAP = 7;
 function badgeRow(base) {
   const chosen = state.badges.filter((id) => BADGES[id]);
   if (!chosen.length) return "";
-  const cells = chosen
-    .map((id) => {
-      const b = BADGES[id];
-      return `<td style="vertical-align:middle;"><img src="${base}/badges/${id}.png" width="${b.w}" height="${b.h}" alt="${esc(b.label)}" style="display:block;border:0;width:${b.w}px;height:${b.h}px;"></td>`;
-    })
-    .join('<td width="7"></td>');
-  return `
+
+  const lines = [[]];
+  let lineW = 0;
+  for (const id of chosen) {
+    const w = BADGES[id].w;
+    const add = lines[lines.length - 1].length ? BADGE_GAP + w : w;
+    if (lineW + add > SIG_WIDTH && lines[lines.length - 1].length) {
+      lines.push([id]);
+      lineW = w;
+    } else {
+      lines[lines.length - 1].push(id);
+      lineW += add;
+    }
+  }
+
+  return lines
+    .map((ids, i) => {
+      const cells = ids
+        .map((id) => {
+          const b = BADGES[id];
+          return `<td style="vertical-align:middle;"><img src="${base}/badges/${id}.png" width="${b.w}" height="${b.h}" alt="${esc(b.label)}" style="display:block;border:0;width:${b.w}px;height:${b.h}px;"></td>`;
+        })
+        .join(`<td width="${BADGE_GAP}"></td>`);
+      return `
   <tr>
-    <td colspan="2" style="padding-top:12px;">
+    <td colspan="2" style="padding-top:${i === 0 ? 12 : BADGE_GAP}px;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${cells}</tr></table>
     </td>
   </tr>`;
+    })
+    .join("");
 }
 
 function sigHtml(forCopy) {
