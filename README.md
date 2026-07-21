@@ -9,8 +9,12 @@ closes his eyes to think, a typing bubble slides up and its dots run a wave
 (the status dot pulses), the headline rotates through **15 variations** of
 "AI employees that …" (win / serve / grow every customer, never sleep, speak
 every language, answer in seconds, recover every cart, …), a result chip
-springs in (small → overshoot → settle) — and he grins. Full loop ≈ 41s,
-150 delta-encoded frames, ~460 KB.
+springs in (small → overshoot → settle) — and he grins. Every chip carries the
+real app logo doing the work (Shopify, WhatsApp, Instagram, Razorpay, Judge.me,
+Loop Returns, Shiprocket, Klaviyo, Intercom, Messenger, Zendesk, Gmail,
+Salesforce), and the background sparkle drifts slowly across the loop. Full
+loop ≈ 41s, 150 delta-encoded frames, ~530 KB. A trust badge strip (GDPR /
+ISO 27001 / G2 "Users love us") renders below the CTA as a separate 6 KB PNG.
 
 **The signature** is three composed blocks (no container boxes — editorial,
 like the site): typographic identity (name + two-tone Sage/pilot linking to
