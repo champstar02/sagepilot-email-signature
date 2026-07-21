@@ -37,12 +37,18 @@ steps are on the page). Works for any teammate.
   `sagepilot-website/public/logo-mark.svg` (sharp from the website's
   node_modules; text via fontconfig + pango). Run: `node scripts/generate-assets.mjs`.
 
-## Going live (one-time)
+## Hosting (live now)
 
-Email clients load images from a public URL. All four files are copied to
-`sagepilot-website/public/email/`, so the **next deploy** serves them at
-`https://www.sagepilot.ai/email/…`. Until that deploy, a pasted signature
-shows broken images (the builder preview uses local files).
+Email clients load images from a public URL. The assets are served from this
+repo (github.com/champstar02/sagepilot-email-signature) via the jsDelivr CDN —
+independent of the website codebase, nothing to deploy:
+
+- https://cdn.jsdelivr.net/gh/champstar02/sagepilot-email-signature@main/assets/sagepilot-hero-animated.gif
+- https://cdn.jsdelivr.net/gh/champstar02/sagepilot-email-signature@main/assets/sagepilot-mark-animated.gif
+
+After regenerating assets: commit + push this repo, then purge the CDN cache
+(open `https://purge.jsdelivr.net/gh/champstar02/sagepilot-email-signature@main/assets/<file>`)
+or bump `@main` to a tag for instant updates.
 
 ## Client notes
 

@@ -169,7 +169,7 @@
       <label>Demo / meeting link</label>
       <input type="text" id="f-demo" value="https://www.sagepilot.ai/request-demo">
       <label>Hosted asset base URL</label>
-      <input type="text" id="f-base" value="https://www.sagepilot.ai/email">
+      <input type="text" id="f-base" value="https://cdn.jsdelivr.net/gh/champstar02/sagepilot-email-signature@main/assets">
 
       <label>Variant</label>
       <div class="seg" id="seg-variant">
@@ -211,11 +211,11 @@
         </div>
       </div>
 
-      <div class="note"><b>Before this goes live:</b> the two files in <code>assets/</code> must be
-      reachable at the asset base URL above. They are copied into the website repo at
-      <code>public/email/</code> — the next deploy of sagepilot-website serves them at
-      <code>sagepilot.ai/email/…</code>. Until then, a pasted signature shows a broken image
-      (this preview uses the local files).</div>
+      <div class="note"><b>Hosting:</b> the images are served from the
+      <code>sagepilot-email-signature</code> GitHub repo via the jsDelivr CDN — already live,
+      nothing to deploy, and fully independent of the website codebase. If you regenerate the
+      GIFs, commit and push this repo, then purge the CDN cache at
+      <code>purge.jsdelivr.net/gh/champstar02/sagepilot-email-signature@main/assets/…</code>.</div>
     </div>
   </div>
 
