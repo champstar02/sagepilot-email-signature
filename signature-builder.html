@@ -169,7 +169,7 @@
       <label>Demo / meeting link</label>
       <input type="text" id="f-demo" value="https://www.sagepilot.ai/request-demo">
       <label>Hosted asset base URL</label>
-      <input type="text" id="f-base" value="https://cdn.jsdelivr.net/gh/champstar02/sagepilot-email-signature@main/assets">
+      <input type="text" id="f-base" value="https://cdn.jsdelivr.net/gh/champstar02/sagepilot-email-signature@v1/assets">
 
       <label>Variant</label>
       <div class="seg" id="seg-variant">
@@ -212,10 +212,10 @@
       </div>
 
       <div class="note"><b>Hosting:</b> the images are served from the
-      <code>sagepilot-email-signature</code> GitHub repo via the jsDelivr CDN — already live,
-      nothing to deploy, and fully independent of the website codebase. If you regenerate the
-      GIFs, commit and push this repo, then purge the CDN cache at
-      <code>purge.jsdelivr.net/gh/champstar02/sagepilot-email-signature@main/assets/…</code>.</div>
+      <code>sagepilot-email-signature</code> GitHub repo via the jsDelivr CDN, pinned to the
+      immutable <code>v1</code> tag — already live, nothing to deploy, independent of the
+      website codebase. To ship new assets: commit + push, <code>git tag v2 &amp;&amp; git push
+      origin v2</code>, then bump the tag in the asset base URL above.</div>
     </div>
   </div>
 
