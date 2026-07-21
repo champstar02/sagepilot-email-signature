@@ -147,7 +147,7 @@ const CY = 106; // chip top
 const SPARKLE_PATHS = `<path d="M12.5 2.5l1.1 3.1a3 3 0 0 0 1.8 1.8l3.1 1.1-3.1 1.1a3 3 0 0 0-1.8 1.8l-1.1 3.1-1.1-3.1a3 3 0 0 0-1.8-1.8L6.5 8.5l3.1-1.1a3 3 0 0 0 1.8-1.8l1.1-3.1z"/>
 <path d="M5 12l.65 1.85a2 2 0 0 0 1.2 1.2L8.7 15.7l-1.85.65a2 2 0 0 0-1.2 1.2L5 19.4l-.65-1.85a2 2 0 0 0-1.2-1.2L1.3 15.7l1.85-.65a2 2 0 0 0 1.2-1.2L5 12z"/>`;
 
-function heroBase({ wm = 0.09, pulse = false, faceOpts = OPEN } = {}) {
+function heroBase({ wm = 0.09, wmRot = 9, pulse = false, faceOpts = OPEN } = {}) {
   const s = ROBOT_PX / 26;
   // status dot sits on the robot's bounding box corner
   const dotX = ROBOT_X + ROBOT_PX - 12;
@@ -155,7 +155,7 @@ function heroBase({ wm = 0.09, pulse = false, faceOpts = OPEN } = {}) {
   return `<svg width="${SW}" height="${SH}" viewBox="0 0 ${SW} ${SH}" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>${MINT}</defs>
   <rect x="1" y="1" width="${SW - 2}" height="${SH - 2}" rx="30" fill="url(#mint)" stroke="#CFEDDD" stroke-width="2"/>
-  <g transform="translate(694 18) scale(7.6) rotate(9 10 10)" fill="#1BB46A" opacity="${wm}">${SPARKLE_PATHS}</g>
+  <g transform="translate(694 18) scale(7.6) rotate(${wmRot} 10 10)" fill="#1BB46A" opacity="${wm}">${SPARKLE_PATHS}</g>
   <g transform="translate(${ROBOT_X} ${ROBOT_Y}) scale(${s})">${face(faceOpts)}</g>
   <circle cx="${dotX}" cy="${dotY}" r="${pulse ? 15 : 12}" fill="#22E185" stroke="#F4FBF7" stroke-width="5" opacity="${pulse ? 0.8 : 1}"/>
 </svg>`;
@@ -248,21 +248,23 @@ async function typingPng(alpha, phase) {
   return sharp(Buffer.from(svg)).png().toBuffer();
 }
 
+// Every scene carries the icon of the tool doing the work — the site's Dock
+// motif ("real app icons, full color") folded into the chips.
 const SCENES = [
   { tail: "win every customer", chip: "Abandoned cart recovered", icon: "shopify" },
-  { tail: "serve every customer", chip: "Return resolved in 40 seconds" },
+  { tail: "serve every customer", chip: "Return resolved in 40 seconds", icon: "loopreturns" },
   { tail: "grow every customer", chip: "Repeat order placed", icon: "shopify" },
   { tail: "never sleep", chip: "Order query answered at 2 AM", icon: "whatsapp" },
   { tail: "speak every language", chip: "Replied in Hindi and English", icon: "whatsapp" },
-  { tail: "answer in seconds", chip: "First reply in 8 seconds" },
-  { tail: "recover every cart", chip: "Checkout nudge converted", icon: "shopify" },
-  { tail: "delight customers", chip: "Rated 5 stars after chat" },
+  { tail: "answer in seconds", chip: "First reply in 8 seconds", icon: "intercom" },
+  { tail: "recover every cart", chip: "Payment link converted", icon: "razorpay" },
+  { tail: "delight customers", chip: "Rated 5 stars after chat", icon: "judgeme" },
   { tail: "work every channel", chip: "Instagram DM answered", icon: "instagram" },
-  { tail: "handle every return", chip: "Exchange booked, sale saved", icon: "shopify" },
+  { tail: "handle every return", chip: "Exchange booked, sale saved", icon: "shiprocket" },
   { tail: "know every order", chip: "Tracking sent before asked", icon: "gmail" },
-  { tail: "remember everyone", chip: "Birthday offer delivered", icon: "whatsapp" },
-  { tail: "upsell with taste", chip: "Size swap saved the sale" },
-  { tail: "scale with you", chip: "1,200 chats this week" },
+  { tail: "remember everyone", chip: "Birthday offer delivered", icon: "klaviyo" },
+  { tail: "upsell with taste", chip: "Size swap saved the sale", icon: "messenger" },
+  { tail: "scale with you", chip: "1,200 tickets this week", icon: "zendesk" },
   { tail: "close every loop", chip: "CRM updated automatically", icon: "salesforce" },
 ];
 
@@ -300,9 +302,9 @@ async function heroFrame(spec) {
 
 const line = (i, tailAlpha) => ({ tail: SCENES[i].tail, preAlpha: 100, tailAlpha });
 
-// The sparkle watermark stays CONSTANT (0.10) across every frame: any change
-// to it repaints a big region and bloats the delta-encoded GIF. Life comes
-// from the face, the status dot, and the bubble/chip — all small regions.
+// Sparkle watermark drifts once per SCENE (rotation + opacity), never per
+// frame — ambient background motion at ~1 extra repaint per scene, so the
+// delta-encoded GIF stays lean. WM is the static-PNG/QA default.
 const WM = 0.1;
 
 function holdSpec(i, faceOpts = OPEN) {
@@ -319,27 +321,30 @@ function holdSpec(i, faceOpts = OPEN) {
 const heroSeq = [];
 for (let i = 0; i < SCENES.length; i++) {
   const j = (i + 1) % SCENES.length;
-  const push = (base, lines, chips, ms) => heroSeq.push({ spec: { base, lines, chips }, ms });
+  // Ambient sparkle drift: rotation and opacity shift once per scene — slow
+  // background motion across the loop at ~1 repaint per scene.
+  const sceneWm = { wm: i % 2 ? 0.105 : 0.085, wmRot: 7 + (i % 3) * 3 };
+  const push = (base, lines, chips, ms) => heroSeq.push({ spec: { base: { ...sceneWm, ...base }, lines, chips }, ms });
 
-  push({ wm: WM, faceOpts: OPEN }, [line(i, 100)], [{ label: SCENES[i].chip, icon: SCENES[i].icon, alpha: 100 }], 1150);
+  push({ faceOpts: OPEN }, [line(i, 100)], [{ label: SCENES[i].chip, icon: SCENES[i].icon, alpha: 100 }], 1150);
   // old result fades while eyes close
-  push({ wm: WM, faceOpts: HALF }, [line(i, 55)], [{ label: SCENES[i].chip, icon: SCENES[i].icon, alpha: 50 }], 70);
+  push({ faceOpts: HALF }, [line(i, 55)], [{ label: SCENES[i].chip, icon: SCENES[i].icon, alpha: 50 }], 70);
   // typing bubble slides up as the new headline fades in
-  push({ wm: WM, pulse: true, faceOpts: SHUT }, [line(j, 55)], [{ typing: true, phase: 0, alpha: 55, dy: 8 }], 70);
+  push({ pulse: true, faceOpts: SHUT }, [line(j, 55)], [{ typing: true, phase: 0, alpha: 55, dy: 8 }], 70);
   // three-beat typing wave, bubble settled
   for (const [k, phase] of [0, 1, 2].entries()) {
     push(
-      { wm: WM, pulse: k % 2 === 0, faceOpts: SHUT },
+      { pulse: k % 2 === 0, faceOpts: SHUT },
       [line(j, 100)],
       [{ typing: true, phase, alpha: 100 }],
       170,
     );
   }
   // chip springs in: small -> overshoot -> settle, robot grins at it
-  push({ wm: WM, faceOpts: GRIN_IN }, [line(j, 100)], [{ label: SCENES[j].chip, icon: SCENES[j].icon, alpha: 60, scale: 0.94, dy: 6 }], 60);
-  push({ wm: WM, faceOpts: GRIN }, [line(j, 100)], [{ label: SCENES[j].chip, icon: SCENES[j].icon, alpha: 100, scale: 1.07 }], 70);
-  push({ wm: WM, faceOpts: GRIN }, [line(j, 100)], [{ label: SCENES[j].chip, icon: SCENES[j].icon, alpha: 100 }], 640);
-  push({ wm: WM, faceOpts: GRIN_IN }, [line(j, 100)], [{ label: SCENES[j].chip, icon: SCENES[j].icon, alpha: 100 }], 60);
+  push({ faceOpts: GRIN_IN }, [line(j, 100)], [{ label: SCENES[j].chip, icon: SCENES[j].icon, alpha: 60, scale: 0.94, dy: 6 }], 60);
+  push({ faceOpts: GRIN }, [line(j, 100)], [{ label: SCENES[j].chip, icon: SCENES[j].icon, alpha: 100, scale: 1.07 }], 70);
+  push({ faceOpts: GRIN }, [line(j, 100)], [{ label: SCENES[j].chip, icon: SCENES[j].icon, alpha: 100 }], 640);
+  push({ faceOpts: GRIN_IN }, [line(j, 100)], [{ label: SCENES[j].chip, icon: SCENES[j].icon, alpha: 100 }], 60);
 }
 
 /* ------------------------------------------------------------------- build */
@@ -377,7 +382,7 @@ async function badgePill(iconSvg, label) {
   const icon = 24;
   const w = padX + icon + gap + t.w + padX;
   const bg = `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
-    <rect x="0.75" y="0.75" width="${w - 1.5}" height="${h - 1.5}" rx="12" fill="#FFFFFF" stroke="#E7E7E3" stroke-width="1.5"/>
+    <rect x="0.75" y="0.75" width="${w - 1.5}" height="${h - 1.5}" rx="12" fill="#FFFFFF" stroke="#DCEFE4" stroke-width="1.5"/>
     <g transform="translate(${padX} ${(h - icon) / 2})">${iconSvg}</g>
   </svg>`;
   const buf = await sharp(Buffer.from(bg))
