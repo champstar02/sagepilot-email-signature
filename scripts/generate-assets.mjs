@@ -1,0 +1,356 @@
+/*
+ * Generates the email-signature brand assets from the Sagepilot logo mark:
+ *  - assets/sagepilot-mark-animated.gif   (blink + grin avatar tile, 3x of 44px — compact variant)
+ *  - assets/sagepilot-mark.png            (static fallback)
+ *  - assets/sagepilot-hero-animated.gif   (hero scene, 2x of 420x96: the robot
+ *    works — eyes close to think, typing dots wave, chip pops, he grins)
+ *  - assets/sagepilot-hero.png            (static fallback, scene 1)
+ *  - assets/frames-preview.png            (QA sheet of key frames)
+ *
+ * Type is set in the real Instrument Sans (assets/fonts) via fontconfig+pango.
+ * Surfaces follow DESIGN-SYSTEM-V2.md: ChatPanel mint gradient #D8F3E4->#F4FBF7,
+ * ActionChip = white chip + green sparkle + brand-700 semibold text, bare mark
+ * as the agent avatar (chat-bits.tsx AgentAvatar).
+ * Uses sharp from the sagepilot-website repo. Run: node scripts/generate-assets.mjs
+ */
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+import { createRequire } from "node:module";
+
+const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const outDir = join(root, "assets");
+mkdirSync(outDir, { recursive: true });
+
+// Point fontconfig at the bundled Instrument Sans before sharp loads.
+const fontsDir = join(outDir, "fonts");
+const fontsConf = join(fontsDir, "fonts.conf");
+writeFileSync(
+  fontsConf,
+  `<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+  <dir>${fontsDir}</dir>
+  <dir>/System/Library/Fonts</dir>
+  <dir>/Library/Fonts</dir>
+  <cachedir>${join(fontsDir, ".cache")}</cachedir>
+</fontconfig>
+`,
+);
+process.env.FONTCONFIG_FILE = fontsConf;
+
+const require = createRequire(import.meta.url);
+const sharp = require("/Users/tharunbalaji/Desktop/Work/Projects/sagepilot-website/node_modules/sharp");
+
+/* ------------------------------------------------------------------- mark */
+
+const markSvg = readFileSync(
+  "/Users/tharunbalaji/Desktop/Work/Projects/sagepilot-website/public/logo-mark.svg",
+  "utf8",
+);
+const inner = markSvg
+  .replace(/<svg[^>]*>/, "")
+  .replace(/<\/svg>\s*$/, "")
+  .trim();
+
+const EYE_CY = 13.66;
+const EYE_PREFIXES = ['d="M17.8882', 'd="M8.3705'];
+const MOUTH_PREFIX = 'd="M9.30672';
+const MOUTH_CX = 13.3;
+const MOUTH_CY = 20.7;
+
+function face({ eyes = 1, mouth = 1 } = {}) {
+  return inner
+    .split("\n")
+    .map((line) => {
+      const t = line.trim();
+      if (eyes < 1 && EYE_PREFIXES.some((p) => t.includes(p))) {
+        const ty = EYE_CY * (1 - eyes);
+        return `<g transform="translate(0 ${ty.toFixed(4)}) scale(1 ${eyes})">${t}</g>`;
+      }
+      if (mouth !== 1 && t.includes(MOUTH_PREFIX)) {
+        const tx = MOUTH_CX * (1 - mouth);
+        const ty = MOUTH_CY * (1 - mouth);
+        return `<g transform="translate(${tx.toFixed(4)} ${ty.toFixed(4)}) scale(${mouth})">${t}</g>`;
+      }
+      return line;
+    })
+    .join("\n");
+}
+
+const OPEN = { eyes: 1 };
+const HALF = { eyes: 0.5 };
+const SHUT = { eyes: 0.15 };
+const GRIN_IN = { eyes: 0.75, mouth: 1.05 };
+const GRIN = { eyes: 0.45, mouth: 1.11 };
+
+const MINT = `<linearGradient id="mint" x1="0" y1="0" x2="1" y2="1">
+  <stop offset="0" stop-color="#D8F3E4"/><stop offset="1" stop-color="#F4FBF7"/>
+</linearGradient>`;
+
+/* -------------------------------------------------------------- mark tile */
+
+const TILE = 132; // 3x of 44px display (compact variant avatar)
+function tileSvg(faceOpts) {
+  const markPx = 96;
+  const s = markPx / 26;
+  const off = (TILE - markPx) / 2;
+  return `<svg width="${TILE}" height="${TILE}" viewBox="0 0 ${TILE} ${TILE}" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>${MINT}</defs>
+  <rect x="1.5" y="1.5" width="${TILE - 3}" height="${TILE - 3}" rx="30" fill="url(#mint)" stroke="#C4E8D4" stroke-width="3"/>
+  <g transform="translate(${off} ${off}) scale(${s})">${face(faceOpts)}</g>
+</svg>`;
+}
+const tilePng = (f) => sharp(Buffer.from(tileSvg(f))).png().toBuffer();
+
+const tileSeq = [
+  { f: OPEN, ms: 2200 },
+  { f: HALF, ms: 40 },
+  { f: SHUT, ms: 70 },
+  { f: HALF, ms: 40 },
+  { f: OPEN, ms: 200 },
+  { f: HALF, ms: 40 },
+  { f: SHUT, ms: 70 },
+  { f: HALF, ms: 40 },
+  { f: OPEN, ms: 1300 },
+  { f: GRIN_IN, ms: 70 },
+  { f: GRIN, ms: 750 },
+  { f: GRIN_IN, ms: 70 },
+];
+
+/* ------------------------------------------------------------ text helpers */
+
+const escXml = (s) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+async function text(str, { font, color, alpha = 100 }) {
+  const markup = `<span foreground="${color}"${alpha < 100 ? ` alpha="${Math.max(1, Math.round(alpha))}%"` : ""}>${escXml(str)}</span>`;
+  const img = sharp({ text: { text: markup, font, dpi: 72, rgba: true } });
+  const buf = await img.png().toBuffer();
+  const meta = await sharp(buf).metadata();
+  return { buf, w: meta.width, h: meta.height };
+}
+
+/* ------------------------------------------------------------- hero scene
+ * 840x192 (displayed 420x96). Mint ChatPanel. The robot is IN the scene with
+ * an "online" status dot; headline rotates; chips pop; the robot reacts.
+ */
+const SW = 840;
+const SH = 192;
+const ROBOT_X = 40;
+const ROBOT_Y = 34;
+const ROBOT_PX = 124;
+const TX = 200; // text zone left
+const HY = 42; // headline top
+const CY = 106; // chip top
+
+const SPARKLE_PATHS = `<path d="M12.5 2.5l1.1 3.1a3 3 0 0 0 1.8 1.8l3.1 1.1-3.1 1.1a3 3 0 0 0-1.8 1.8l-1.1 3.1-1.1-3.1a3 3 0 0 0-1.8-1.8L6.5 8.5l3.1-1.1a3 3 0 0 0 1.8-1.8l1.1-3.1z"/>
+<path d="M5 12l.65 1.85a2 2 0 0 0 1.2 1.2L8.7 15.7l-1.85.65a2 2 0 0 0-1.2 1.2L5 19.4l-.65-1.85a2 2 0 0 0-1.2-1.2L1.3 15.7l1.85-.65a2 2 0 0 0 1.2-1.2L5 12z"/>`;
+
+function heroBase({ wm = 0.09, pulse = false, faceOpts = OPEN } = {}) {
+  const s = ROBOT_PX / 26;
+  // status dot sits on the robot's bounding box corner
+  const dotX = ROBOT_X + ROBOT_PX - 12;
+  const dotY = ROBOT_Y + ROBOT_PX - 14;
+  return `<svg width="${SW}" height="${SH}" viewBox="0 0 ${SW} ${SH}" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>${MINT}</defs>
+  <rect x="1" y="1" width="${SW - 2}" height="${SH - 2}" rx="30" fill="url(#mint)" stroke="#CFEDDD" stroke-width="2"/>
+  <g transform="translate(694 18) scale(7.6) rotate(9 10 10)" fill="#1BB46A" opacity="${wm}">${SPARKLE_PATHS}</g>
+  <g transform="translate(${ROBOT_X} ${ROBOT_Y}) scale(${s})">${face(faceOpts)}</g>
+  <circle cx="${dotX}" cy="${dotY}" r="${pulse ? 15 : 12}" fill="#22E185" stroke="#F4FBF7" stroke-width="5" opacity="${pulse ? 0.8 : 1}"/>
+</svg>`;
+}
+
+// Whole headline as ONE pango layout so spacing and baselines are exact.
+async function linePng(tail, { preAlpha, tailAlpha }) {
+  const pre = `<span weight="500" foreground="#181818"${preAlpha < 100 ? ` alpha="${Math.max(1, Math.round(preAlpha))}%"` : ""}>AI employees that </span>`;
+  const tl = `<span weight="600" foreground="#0E6B43"${tailAlpha < 100 ? ` alpha="${Math.max(1, Math.round(tailAlpha))}%"` : ""}>${escXml(tail)}</span>`;
+  return sharp({
+    text: { text: pre + tl, font: "Instrument Sans 33", dpi: 72, rgba: true },
+  })
+    .png()
+    .toBuffer();
+}
+
+async function chipPng(label, alpha = 100) {
+  const t = await text(label, {
+    font: "Instrument Sans Semi-Bold 22",
+    color: "#1BB46A",
+    alpha,
+  });
+  const padX = 17;
+  const gap = 9;
+  const h = 46;
+  const w = padX + 26 + gap + t.w + padX;
+  const a = alpha / 100;
+  const bg = `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0.75" y="0.75" width="${w - 1.5}" height="${h - 1.5}" rx="12" fill="#FFFFFF" fill-opacity="${a}" stroke="#DCEFE4" stroke-opacity="${a}" stroke-width="1.5"/>
+    <g transform="translate(${padX} ${(h - 26) / 2}) scale(1.3)" fill="#22E185" fill-opacity="${a}">${SPARKLE_PATHS}</g>
+  </svg>`;
+  const buf = await sharp(Buffer.from(bg))
+    .composite([{ input: t.buf, left: padX + 26 + gap, top: Math.round((h - t.h) / 2) }])
+    .png()
+    .toBuffer();
+  return { buf, w, h };
+}
+
+const TYPING_WAVE = [
+  [0.95, 0.5, 0.3],
+  [0.45, 0.95, 0.5],
+  [0.3, 0.5, 0.95],
+];
+async function typingPng(alpha, phase) {
+  const h = 46;
+  const w = 80;
+  const dotAlphas = TYPING_WAVE[phase % TYPING_WAVE.length];
+  const a = alpha / 100;
+  const svg = `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0.75" y="0.75" width="${w - 1.5}" height="${h - 1.5}" rx="12" fill="#FFFFFF" fill-opacity="${a}" stroke="#DCEFE4" stroke-opacity="${a}" stroke-width="1.5"/>
+    <circle cx="24" cy="23" r="4.5" fill="#1BB46A" fill-opacity="${(dotAlphas[0] * a).toFixed(3)}"/>
+    <circle cx="40" cy="23" r="4.5" fill="#1BB46A" fill-opacity="${(dotAlphas[1] * a).toFixed(3)}"/>
+    <circle cx="56" cy="23" r="4.5" fill="#1BB46A" fill-opacity="${(dotAlphas[2] * a).toFixed(3)}"/>
+  </svg>`;
+  return sharp(Buffer.from(svg)).png().toBuffer();
+}
+
+const SCENES = [
+  { tail: "win every customer", chip: "Abandoned cart recovered" },
+  { tail: "serve every customer", chip: "Return resolved in 40 seconds" },
+  { tail: "grow every customer", chip: "Repeat order placed" },
+  { tail: "never sleep", chip: "Order query answered at 2 AM" },
+  { tail: "speak every language", chip: "Replied in Hindi and English" },
+  { tail: "answer in seconds", chip: "First reply in 8 seconds" },
+  { tail: "recover every cart", chip: "Checkout nudge converted" },
+  { tail: "delight customers", chip: "Rated 5 stars after chat" },
+  { tail: "work every channel", chip: "WhatsApp and email handled" },
+  { tail: "handle every return", chip: "Exchange booked, sale saved" },
+  { tail: "know every order", chip: "Tracking sent before asked" },
+  { tail: "remember everyone", chip: "Birthday offer delivered" },
+  { tail: "upsell with taste", chip: "Size swap saved the sale" },
+  { tail: "scale with you", chip: "1,200 chats this week" },
+  { tail: "close every loop", chip: "CRM updated automatically" },
+];
+
+async function heroFrame(spec) {
+  // spec: { base: {wm, pulse, faceOpts}, lines: [...],
+  //         chips: [{label?|typing?, phase?, alpha, dx?, dy?, scale?}] }
+  const overlays = [];
+  for (const l of spec.lines) {
+    overlays.push({ input: await linePng(l.tail, l), left: TX, top: HY });
+  }
+  for (const c of spec.chips) {
+    if (c.typing) {
+      overlays.push({
+        input: await typingPng(c.alpha, c.phase || 0),
+        left: TX + Math.round(c.dx || 0),
+        top: CY + Math.round(c.dy || 0),
+      });
+    } else {
+      const chip = await chipPng(c.label, c.alpha);
+      let input = chip.buf;
+      let left = TX + Math.round(c.dx || 0);
+      let top = CY + Math.round(c.dy || 0);
+      if (c.scale && c.scale !== 1) {
+        const nw = Math.round(chip.w * c.scale);
+        const nh = Math.round(chip.h * c.scale);
+        input = await sharp(chip.buf).resize(nw, nh).png().toBuffer();
+        left -= Math.round((nw - chip.w) / 2);
+        top -= Math.round((nh - chip.h) / 2);
+      }
+      overlays.push({ input, left, top });
+    }
+  }
+  return sharp(Buffer.from(heroBase(spec.base))).composite(overlays).png().toBuffer();
+}
+
+const line = (i, tailAlpha) => ({ tail: SCENES[i].tail, preAlpha: 100, tailAlpha });
+
+// The sparkle watermark stays CONSTANT (0.10) across every frame: any change
+// to it repaints a big region and bloats the delta-encoded GIF. Life comes
+// from the face, the status dot, and the bubble/chip — all small regions.
+const WM = 0.1;
+
+function holdSpec(i, faceOpts = OPEN) {
+  return {
+    base: { wm: WM, faceOpts },
+    lines: [line(i, 100)],
+    chips: [{ label: SCENES[i].chip, alpha: 100, dx: 0 }],
+  };
+}
+
+// Story per scene: robot idles -> blinks and thinks while the old result
+// fades -> the typing bubble SLIDES UP into place -> dots run a wave (status
+// dot pulsing) -> the chip springs in (small -> overshoot -> settle) -> grin.
+const heroSeq = [];
+for (let i = 0; i < SCENES.length; i++) {
+  const j = (i + 1) % SCENES.length;
+  const push = (base, lines, chips, ms) => heroSeq.push({ spec: { base, lines, chips }, ms });
+
+  push({ wm: WM, faceOpts: OPEN }, [line(i, 100)], [{ label: SCENES[i].chip, alpha: 100 }], 1150);
+  // old result fades while eyes close
+  push({ wm: WM, faceOpts: HALF }, [line(i, 55)], [{ label: SCENES[i].chip, alpha: 50 }], 70);
+  // typing bubble slides up as the new headline fades in
+  push({ wm: WM, pulse: true, faceOpts: SHUT }, [line(j, 55)], [{ typing: true, phase: 0, alpha: 55, dy: 8 }], 70);
+  // three-beat typing wave, bubble settled
+  for (const [k, phase] of [0, 1, 2].entries()) {
+    push(
+      { wm: WM, pulse: k % 2 === 0, faceOpts: SHUT },
+      [line(j, 100)],
+      [{ typing: true, phase, alpha: 100 }],
+      170,
+    );
+  }
+  // chip springs in: small -> overshoot -> settle, robot grins at it
+  push({ wm: WM, faceOpts: GRIN_IN }, [line(j, 100)], [{ label: SCENES[j].chip, alpha: 60, scale: 0.94, dy: 6 }], 60);
+  push({ wm: WM, faceOpts: GRIN }, [line(j, 100)], [{ label: SCENES[j].chip, alpha: 100, scale: 1.07 }], 70);
+  push({ wm: WM, faceOpts: GRIN }, [line(j, 100)], [{ label: SCENES[j].chip, alpha: 100 }], 640);
+  push({ wm: WM, faceOpts: GRIN_IN }, [line(j, 100)], [{ label: SCENES[j].chip, alpha: 100 }], 60);
+}
+
+/* ------------------------------------------------------------------- build */
+
+const tileFrames = await Promise.all(tileSeq.map((s) => tilePng(s.f)));
+await sharp(tileFrames, { join: { animated: true } })
+  .gif({ delay: tileSeq.map((s) => s.ms), loop: 0 })
+  .toFile(join(outDir, "sagepilot-mark-animated.gif"));
+writeFileSync(join(outDir, "sagepilot-mark.png"), await tilePng(OPEN));
+
+const heroFrames = [];
+for (const s of heroSeq) heroFrames.push(await heroFrame(s.spec));
+// interFrameMaxError enables transparency-based delta frames: only changed
+// pixels are stored, which is what makes a 15-scene loop email-sized.
+// dither:0 keeps static pixels byte-identical across frames so the delta
+// encoding can actually drop them (dithering noise otherwise defeats it).
+await sharp(heroFrames, { join: { animated: true } })
+  .gif({
+    delay: heroSeq.map((s) => s.ms),
+    loop: 0,
+    effort: 10,
+    dither: 0,
+    interFrameMaxError: 10,
+    interPaletteMaxError: 8,
+  })
+  .toFile(join(outDir, "sagepilot-hero-animated.gif"));
+writeFileSync(join(outDir, "sagepilot-hero.png"), await heroFrame(holdSpec(0)));
+
+// QA sheet: hero hold / typing / grin
+await sharp({
+  create: { width: SW + 16, height: SH * 3 + 32, channels: 4, background: "#FFFFFF" },
+})
+  .composite([
+    { input: await heroFrame(holdSpec(0)), left: 8, top: 8 },
+    {
+      input: await heroFrame({
+        base: { wm: 0.1, pulse: true, faceOpts: SHUT },
+        lines: [line(1, 100)],
+        chips: [{ typing: true, phase: 0, alpha: 100, dx: 0 }],
+      }),
+      left: 8,
+      top: SH + 16,
+    },
+    { input: await heroFrame(holdSpec(1, GRIN)), left: 8, top: SH * 2 + 24 },
+  ])
+  .png()
+  .toFile(join(outDir, "frames-preview.png"));
+
+console.log("done");

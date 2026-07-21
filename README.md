@@ -1,0 +1,52 @@
+# Sagepilot email signature
+
+Team email signature in the website's design language, built around ONE
+animated hero scene: the Sagepilot robot at work.
+
+**The hero GIF** (420×96 display, mint ChatPanel surface, real Instrument Sans):
+the robot sits in the scene with a green "online" status dot. Each scene he
+closes his eyes to think, a typing bubble slides up and its dots run a wave
+(the status dot pulses), the headline rotates through **15 variations** of
+"AI employees that …" (win / serve / grow every customer, never sleep, speak
+every language, answer in seconds, recover every cart, …), a result chip
+springs in (small → overshoot → settle) — and he grins. Full loop ≈ 41s,
+150 delta-encoded frames, ~460 KB.
+
+**The signature** is three composed blocks (no container boxes — editorial,
+like the site): typographic identity (name + two-tone Sage/pilot linking to
+the site), the hero scene, and one action line — "Hire your first AI
+employee →" CTA left (links to /request-demo), quiet email right. Compact
+variant = mint avatar tile + name + contacts.
+
+## Use it
+
+Open **signature-builder.html** in a browser. Fill in your details, click
+**Copy signature**, paste into your mail client (Gmail / Apple Mail / Outlook
+steps are on the page). Works for any teammate.
+
+## Files
+
+- `signature-builder.html` — builder + live light/dark preview (dark simulates
+  client auto-inversion).
+- `assets/sagepilot-hero-animated.gif` — hero scene, 840×192 (2x), ~123 KB.
+- `assets/sagepilot-hero.png` — static fallback (scene 1).
+- `assets/sagepilot-mark-animated.gif` — blink/grin avatar tile (compact variant), ~8 KB.
+- `assets/sagepilot-mark.png` — static fallback.
+- `assets/fonts/` — Instrument Sans (OFL), used to typeset the hero.
+- `scripts/generate-assets.mjs` — regenerates everything from
+  `sagepilot-website/public/logo-mark.svg` (sharp from the website's
+  node_modules; text via fontconfig + pango). Run: `node scripts/generate-assets.mjs`.
+
+## Going live (one-time)
+
+Email clients load images from a public URL. All four files are copied to
+`sagepilot-website/public/email/`, so the **next deploy** serves them at
+`https://www.sagepilot.ai/email/…`. Until that deploy, a pasted signature
+shows broken images (the builder preview uses local files).
+
+## Client notes
+
+- Gmail, Apple Mail, Outlook (web/Mac): full animation.
+- Classic Outlook for Windows: first GIF frame only (robot idle, chip visible) — degrades cleanly.
+- Dark mode: clients auto-invert text colors; the mint surface is baked into
+  the image so the hero looks intentional on dark backgrounds.

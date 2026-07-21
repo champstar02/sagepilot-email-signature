@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sagepilot — Email signature</title>
+<link rel="icon" href="assets/sagepilot-mark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #181818; --dim: #909090; --muted: #6F6F6F; --faint: #A3A3A3;
+    --ground: #FFFFFF; --ground2: #FAFAF8; --panel: #F6F6F4; --canvas: #FBFBFA;
+    --brand: #22E185; --brand-50: #E8FCF2; --brand-100: #D2F9E6; --brand-200: #BCF6DA;
+    --brand-600: #1ECA77; --brand-700: #1BB46A; --brand-800: #179D5D;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--ground); }
+  body {
+    font-family: "Instrument Sans", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: var(--ink); -webkit-font-smoothing: antialiased; line-height: 1.5;
+    overflow-x: hidden;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 72px 24px 0; }
+
+  /* ---- hero (site type scale: regular weight, two-tone) ---- */
+  .eyebrow { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+  .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--brand); }
+  h1 {
+    margin-top: 16px; font-size: 56px; font-weight: 400; letter-spacing: -0.02em; line-height: 1.0;
+  }
+  h1 .green { color: var(--brand-600); }
+  .sub { margin: 20px 0 0; font-size: 18px; line-height: 28px; color: rgba(24,24,24,.65); max-width: 600px; }
+  @media (max-width: 640px) { h1 { font-size: 44px; } }
+
+  /* ---- layout ---- */
+  .grid { display: grid; grid-template-columns: 360px 1fr; gap: 40px; align-items: start; margin-top: 56px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  /* ---- controls panel (ground-2 band + hairline) ---- */
+  .controls {
+    background: var(--ground2); border: 1px solid rgba(0,0,0,.08);
+    border-radius: 12px; padding: 24px;
+  }
+  .controls h2 { font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin-bottom: 6px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 14px 0 5px; }
+  input[type=text] {
+    width: 100%; height: 40px; padding: 0 12px; font: inherit; font-size: 14px; color: var(--ink);
+    border: 1px solid rgba(0,0,0,.12); border-radius: 6px; background: #fff; outline: none;
+  }
+  input[type=text]:focus { border-color: var(--brand-600); box-shadow: 0 0 0 3px var(--brand-50); }
+  .seg { display: flex; background: #fff; border: 1px solid rgba(0,0,0,.12); border-radius: 6px; overflow: hidden; }
+  .seg button {
+    flex: 1; height: 36px; font: inherit; font-size: 13.5px; color: var(--muted);
+    background: transparent; border: 0; cursor: pointer;
+  }
+  .seg button + button { border-left: 1px solid rgba(0,0,0,.08); }
+  .seg button.on { background: var(--brand-50); color: var(--brand-800); font-weight: 500; }
+  .actions { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; height: 40px; padding: 0 16px;
+    font: inherit; font-size: 15px; font-weight: 500; cursor: pointer;
+    border-radius: 6px; border: 1px solid transparent; transition: background .15s;
+  }
+  .btn.primary { background: var(--ink); color: #fff; }
+  .btn.primary:hover { background: #000; }
+  .btn.ghost { background: rgba(0,0,0,.05); color: var(--ink); border-color: rgba(0,0,0,.10); }
+  .btn.ghost:hover { background: rgba(0,0,0,.08); }
+  .toast { font-size: 13px; color: var(--brand-800); margin-top: 12px; min-height: 20px; }
+
+  /* ---- UiWindow preview chrome (site mockup grammar) ---- */
+  .preview-col { display: flex; flex-direction: column; gap: 28px; }
+  .window {
+    border-radius: 12px; background: #fff;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.10), 0 24px 60px rgba(0,0,0,.08);
+    overflow: hidden;
+  }
+  .titlebar {
+    display: flex; align-items: center; gap: 6px; padding: 10px 14px;
+    background: var(--panel); border-bottom: 1px solid rgba(0,0,0,.06);
+  }
+  .titlebar .tdot { width: 10px; height: 10px; border-radius: 50%; background: rgba(0,0,0,.15); }
+  .titlebar .tlabel { margin-left: 8px; font-size: 12px; color: var(--faint); }
+  .titlebar .tright { margin-left: auto; font-size: 12px; color: var(--faint); }
+  .window .canvas { background: var(--canvas); padding: 30px; }
+  .window.dark .canvas { background: #0C0C0C; }
+  .window.dark .titlebar { background: #161616; border-bottom-color: rgba(255,255,255,.08); }
+  .window.dark .titlebar .tdot { background: rgba(255,255,255,.18); }
+  .window.dark .titlebar .tlabel, .window.dark .titlebar .tright { color: #6E6E6E; }
+  .fake-mail { font-size: 13.5px; color: var(--faint); margin-bottom: 20px; }
+  .window.dark .fake-mail { color: #5E5E5E; }
+
+  /* Dark canvas simulates the auto color-inversion Gmail / Apple Mail apply */
+  .window.dark [style*="color:#181818"] { color: #F2F2F2 !important; }
+  .window.dark [style*="color:#6F6F6F"] { color: #ABABAB !important; }
+  .window.dark [style*="color:#A3A3A3"] { color: #8A8A8A !important; }
+  .window.dark [style*="color:#C8C8C4"] { color: #6E6E6E !important; }
+  .window.dark [style*="color:#179D5D"] { color: #2FCB7F !important; }
+  .window.dark [style*="color:#1ECA77"] { color: #2FDB88 !important; }
+  .window.dark [style*="background-color:#181818"] { background-color: #F2F2F2 !important; }
+  .window.dark td[style*="background-color:#181818"] a { color: #181818 !important; }
+  .window.dark [style*="background-color:#E8FCF2"] { background-color: #16211B !important; border-color: #2C4437 !important; }
+  .window.dark a[style*="background-color:#E8FCF2"] { color: #E6E6E6 !important; }
+  .window.dark table[style*="background-color:#FFFFFF"] { background-color: #191919 !important; border-color: #333330 !important; }
+  .window.dark [style*="border-top:1px solid #F0F0EC"] { border-top-color: #2C2C2A !important; }
+
+  /* ---- deploy note (brand-50 vignette panel) ---- */
+  .note {
+    background: var(--brand-50); border: 1px solid var(--brand-200);
+    border-radius: 12px; padding: 16px 18px; font-size: 14px; color: var(--ink);
+  }
+  .note b { font-weight: 600; }
+  code { background: rgba(0,0,0,.05); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; }
+  .note code { background: rgba(0,0,0,.06); }
+
+  /* ---- install steps in an ArcSection band (site chapter-break motif) ---- */
+  .arc-band {
+    position: relative; overflow: hidden;
+    margin: 96px calc(50% - 50vw) 0; width: 100vw;
+    background: var(--ground2); border-top: 1px solid rgba(0,0,0,.05);
+    padding: 88px 24px 72px;
+  }
+  .arc-band::before {
+    content: ""; position: absolute; left: 50%; top: 190px; transform: translateX(-50%);
+    width: 1700px; height: 1700px; border-radius: 50%;
+    background: #F4F4F0; border: 1px solid rgba(0,0,0,.06);
+  }
+  .arc-inner { position: relative; max-width: 1080px; margin: 0 auto; }
+  .arc-inner .eyebrow { justify-content: center; }
+  .arc-inner h2 { margin-top: 14px; font-size: 36px; font-weight: 400; letter-spacing: -0.02em; line-height: 1.05; text-align: center; }
+  .arc-inner h2 .dim { color: var(--dim); }
+  .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; margin-top: 56px; }
+  @media (max-width: 820px) { .steps-grid { grid-template-columns: 1fr; } }
+  .step h3 { font-size: 16px; font-weight: 500; margin-bottom: 8px; }
+  .step ol { margin: 0 0 0 18px; color: var(--muted); font-size: 14.5px; }
+  .step li { margin: 6px 0; }
+  .step .quirk { margin-top: 10px; font-size: 13px; color: var(--faint); }
+
+  /* ---- giant watermark footer (site footer motif) ---- */
+  .watermark {
+    margin-top: 96px; height: 150px; overflow: hidden; position: relative;
+  }
+  .watermark span {
+    position: absolute; left: 50%; transform: translateX(-50%); top: 8px;
+    font-size: 240px; font-weight: 500; letter-spacing: -0.04em; line-height: 1;
+    color: rgba(0,0,0,.04); white-space: nowrap; user-select: none;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow"><span class="dot"></span>Sagepilot · Brand kit</div>
+  <h1>Sign every email.<br><span class="green">Like Sagepilot.</span></h1>
+  <p class="sub">Every email the team sends now introduces your AI employees —
+  the mark blinks and grins, and the strip pitches “win, serve, grow every customer”
+  on loop. Fill in your details, copy, paste into Gmail, Apple Mail, or Outlook.</p>
+
+  <div class="grid">
+    <div class="controls">
+      <h2>Details</h2>
+      <label>Full name</label>
+      <input type="text" id="f-name" value="Tharun Balaji">
+      <label>Role</label>
+      <input type="text" id="f-role" value="Founding Team">
+      <label>Email</label>
+      <input type="text" id="f-email" value="tharun.balaji@sagepilot.ai">
+      <label>Phone (optional)</label>
+      <input type="text" id="f-phone" value="" placeholder="+91 …">
+      <label>Demo / meeting link</label>
+      <input type="text" id="f-demo" value="https://www.sagepilot.ai/request-demo">
+      <label>Hosted asset base URL</label>
+      <input type="text" id="f-base" value="https://www.sagepilot.ai/email">
+
+      <label>Variant</label>
+      <div class="seg" id="seg-variant">
+        <button data-v="full" class="on">Full</button>
+        <button data-v="compact">Compact</button>
+      </div>
+      <label>Logo</label>
+      <div class="seg" id="seg-logo">
+        <button data-v="animated" class="on">Animated</button>
+        <button data-v="static">Static</button>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="copy-rich">Copy signature</button>
+        <button class="btn ghost" id="copy-html">Copy HTML</button>
+      </div>
+      <div class="toast" id="toast"></div>
+    </div>
+
+    <div class="preview-col">
+      <div class="window">
+        <div class="titlebar">
+          <span class="tdot"></span><span class="tdot"></span><span class="tdot"></span>
+          <span class="tlabel">New message</span><span class="tright">light mode</span>
+        </div>
+        <div class="canvas">
+          <div class="fake-mail">Best,<br>&nbsp;</div>
+          <div id="preview-light"></div>
+        </div>
+      </div>
+      <div class="window dark">
+        <div class="titlebar">
+          <span class="tdot"></span><span class="tdot"></span><span class="tdot"></span>
+          <span class="tlabel">New message</span><span class="tright">dark mode — simulates client auto-inversion</span>
+        </div>
+        <div class="canvas">
+          <div class="fake-mail">Best,<br>&nbsp;</div>
+          <div id="preview-dark"></div>
+        </div>
+      </div>
+
+      <div class="note"><b>Before this goes live:</b> the two files in <code>assets/</code> must be
+      reachable at the asset base URL above. They are copied into the website repo at
+      <code>public/email/</code> — the next deploy of sagepilot-website serves them at
+      <code>sagepilot.ai/email/…</code>. Until then, a pasted signature shows a broken image
+      (this preview uses the local files).</div>
+    </div>
+  </div>
+
+  <div class="arc-band"><div class="arc-inner">
+    <div class="eyebrow"><span class="dot"></span>Setup</div>
+    <h2>Install it in <span class="dim">two minutes.</span></h2>
+    <div class="steps-grid">
+      <div class="step">
+        <h3>Gmail</h3>
+        <ol>
+          <li>Click <b>Copy signature</b>.</li>
+          <li>Settings → <b>See all settings</b> → General → Signature → <b>Create new</b>.</li>
+          <li>Paste. Set as default for new emails and replies.</li>
+          <li>Scroll down, <b>Save changes</b>.</li>
+        </ol>
+      </div>
+      <div class="step">
+        <h3>Apple Mail</h3>
+        <ol>
+          <li>Click <b>Copy signature</b>.</li>
+          <li>Mail → Settings → Signatures → <b>+</b> for your Sagepilot account.</li>
+          <li>Paste, and untick “Always match my default message font”.</li>
+        </ol>
+      </div>
+      <div class="step">
+        <h3>Outlook</h3>
+        <ol>
+          <li>Settings → Mail → <b>Compose and reply</b>.</li>
+          <li>Paste into the signature editor and save.</li>
+        </ol>
+        <div class="quirk">Classic Outlook for Windows shows only the first GIF frame —
+        the eyes-open one, so it still looks right, just without the blink.</div>
+      </div>
+    </div>
+  </div></div>
+
+  <div class="watermark"><span>Sagepilot</span></div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const state = { variant: "full", logo: "animated" };
+
+function esc(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function sigHtml(forCopy) {
+  const name = esc($("f-name").value.trim() || "Your Name");
+  const role = esc($("f-role").value.trim());
+  const email = $("f-email").value.trim();
+  const phone = $("f-phone").value.trim();
+  const demo = $("f-demo").value.trim();
+  const base = forCopy ? $("f-base").value.trim().replace(/\/+$/, "") : "assets";
+  const logoFile = state.logo === "animated" ? "sagepilot-mark-animated.gif" : "sagepilot-mark.png";
+
+  const site = "https://www.sagepilot.ai";
+  const green = "#179D5D";
+  const linkStyle = `color:#6F6F6F;text-decoration:none;`;
+  const dot = `<span style="color:#C8C8C4;">&nbsp;&middot;&nbsp;</span>`;
+
+  const contactBits = [
+    `<a href="mailto:${esc(email)}" style="${linkStyle}">${esc(email)}</a>`,
+    `<a href="${site}" style="${linkStyle}">sagepilot.ai</a>`,
+  ];
+  if (phone) contactBits.push(`<span style="color:#6F6F6F;">${esc(phone)}</span>`);
+
+  // Full variant action line: the site link lives on the Sagepilot wordmark,
+  // so the right side stays short enough to share the row with the CTA.
+  const rightBits = [`<a href="mailto:${esc(email)}" style="${linkStyle}">${esc(email)}</a>`];
+  if (phone) rightBits.push(`<span style="color:#6F6F6F;">${esc(phone)}</span>`);
+
+  const brandWord =
+    `<a href="${site}" style="text-decoration:none;">` +
+    `<span style="font-weight:600;color:#181818;">Sage</span>` +
+    `<span style="font-weight:600;color:${green};">pilot</span></a>`;
+
+  const heroFile = state.logo === "animated" ? "sagepilot-hero-animated.gif" : "sagepilot-hero.png";
+
+  // Three composed blocks: typographic identity, ONE hero scene (the robot
+  // working), then a single action line — ink CTA left, quiet links right.
+  if (state.variant === "full") {
+    return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="420" style="width:420px;font-family:'Instrument Sans',Helvetica,Arial,sans-serif;">
+  <tr>
+    <td colspan="2">
+      <div style="font-size:17px;line-height:23px;font-weight:600;letter-spacing:-0.3px;color:#181818;">${name}</div>
+      <div style="font-size:13px;line-height:19px;color:#6F6F6F;padding-top:1px;">${role}${role ? ",&nbsp;" : ""}${brandWord}</div>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" style="padding-top:11px;">
+      <a href="${esc(demo)}" style="text-decoration:none;"><img src="${base}/${heroFile}" width="420" height="96" alt="AI employees that win, serve, and grow every customer — Sagepilot" style="display:block;border:0;width:420px;height:96px;"></a>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding-top:11px;">
+      <a href="${esc(demo)}" style="font-size:13.5px;line-height:19px;font-weight:500;color:#181818;text-decoration:none;white-space:nowrap;">Hire your first AI employee&nbsp;<span style="color:#1ECA77;">&#8594;</span></a>
+    </td>
+    <td style="padding-top:11px;text-align:right;">
+      <span style="font-size:12.5px;line-height:19px;">${rightBits.join(dot)}</span>
+    </td>
+  </tr>
+</table>`;
+  }
+
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="360" style="width:360px;font-family:'Instrument Sans',Helvetica,Arial,sans-serif;">
+  <tr>
+    <td style="vertical-align:middle;" width="44">
+      <a href="${site}" style="text-decoration:none;"><img src="${base}/${logoFile}" width="44" height="44" alt="Sagepilot" style="display:block;border:0;width:44px;height:44px;"></a>
+    </td>
+    <td width="13"></td>
+    <td style="vertical-align:middle;">
+      <div style="font-size:16px;line-height:22px;font-weight:600;letter-spacing:-0.2px;color:#181818;">${name}</div>
+      <div style="font-size:13px;line-height:18px;color:#6F6F6F;padding-top:1px;">${role}${role ? ",&nbsp;" : ""}${brandWord}</div>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="3" style="padding-top:8px;">
+      <div style="font-size:12.5px;line-height:18px;">${contactBits.join(dot)}</div>
+    </td>
+  </tr>
+</table>`;
+}
+
+function sigText() {
+  const lines = [
+    $("f-name").value.trim(),
+    [$("f-role").value.trim(), "Sagepilot"].filter(Boolean).join(", "),
+    $("f-email").value.trim() + " · sagepilot.ai",
+  ];
+  const phone = $("f-phone").value.trim();
+  if (phone) lines.push(phone);
+  if (state.variant === "full")
+    lines.push("Hire your first AI employee: " + $("f-demo").value.trim());
+  return lines.join("\n");
+}
+
+function render() {
+  const html = sigHtml(false);
+  $("preview-light").innerHTML = html;
+  $("preview-dark").innerHTML = html;
+}
+
+function toast(msg) {
+  $("toast").textContent = msg;
+  setTimeout(() => { if ($("toast").textContent === msg) $("toast").textContent = ""; }, 3500);
+}
+
+async function copyRich() {
+  const html = sigHtml(true);
+  try {
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "text/html": new Blob([html], { type: "text/html" }),
+        "text/plain": new Blob([sigText()], { type: "text/plain" }),
+      }),
+    ]);
+    toast("Copied — paste into your email client's signature box.");
+  } catch (e) {
+    const holder = document.createElement("div");
+    holder.style.cssText = "position:fixed;left:-9999px;top:0;";
+    holder.innerHTML = html;
+    document.body.appendChild(holder);
+    const range = document.createRange();
+    range.selectNodeContents(holder);
+    const sel = getSelection();
+    sel.removeAllRanges(); sel.addRange(range);
+    const ok = document.execCommand("copy");
+    sel.removeAllRanges(); holder.remove();
+    toast(ok ? "Copied — paste into your email client's signature box."
+             : "Copy failed — use Copy HTML instead.");
+  }
+}
+
+async function copyHtmlSrc() {
+  try {
+    await navigator.clipboard.writeText(sigHtml(true));
+    toast("HTML source copied.");
+  } catch (e) { toast("Copy failed — your browser blocked clipboard access."); }
+}
+
+document.querySelectorAll("#seg-variant button").forEach((b) =>
+  b.addEventListener("click", () => {
+    state.variant = b.dataset.v;
+    document.querySelectorAll("#seg-variant button").forEach((x) => x.classList.toggle("on", x === b));
+    render();
+  }));
+document.querySelectorAll("#seg-logo button").forEach((b) =>
+  b.addEventListener("click", () => {
+    state.logo = b.dataset.v;
+    document.querySelectorAll("#seg-logo button").forEach((x) => x.classList.toggle("on", x === b));
+    render();
+  }));
+document.querySelectorAll("input").forEach((i) => i.addEventListener("input", render));
+$("copy-rich").addEventListener("click", copyRich);
+$("copy-html").addEventListener("click", copyHtmlSrc);
+render();
+</script>
+</body>
+</html>
