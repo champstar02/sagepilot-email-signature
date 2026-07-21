@@ -440,19 +440,24 @@ ${badgeRow(base)}
 </table>`;
   }
 
+  // Compact: the full Sagepilot logo lockup (mark + wordmark) on the mint
+  // plate, so the brand reads at a glance without repeating "Sagepilot" in
+  // the role line.
+  const lockupFile =
+    state.logo === "animated" ? "sagepilot-logo-animated.gif" : "sagepilot-logo.png";
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="360" style="width:360px;font-family:'Instrument Sans',Helvetica,Arial,sans-serif;">
   <tr>
-    <td style="vertical-align:middle;" width="44">
-      <a href="${site}" style="text-decoration:none;"><img src="${base}/${logoFile}" width="44" height="44" alt="Sagepilot" style="display:block;border:0;width:44px;height:44px;"></a>
+    <td style="vertical-align:middle;" width="140">
+      <a href="${site}" style="text-decoration:none;"><img src="${base}/${lockupFile}" width="140" height="45" alt="Sagepilot" style="display:block;border:0;width:140px;height:45px;"></a>
     </td>
-    <td width="13"></td>
-    <td style="vertical-align:middle;">
+    <td width="14"></td>
+    <td style="vertical-align:middle;border-left:2px solid #BCF6DA;padding-left:14px;">
       <div style="font-size:16px;line-height:22px;font-weight:600;letter-spacing:-0.2px;color:#181818;">${name}</div>
-      <div style="font-size:13px;line-height:18px;color:#6F6F6F;padding-top:1px;">${role}${role ? ",&nbsp;" : ""}${brandWord}</div>
+      <div style="font-size:13px;line-height:18px;color:#6F6F6F;padding-top:1px;">${role}</div>
     </td>
   </tr>
   <tr>
-    <td colspan="3" style="padding-top:8px;">
+    <td colspan="3" style="padding-top:9px;">
       <div style="font-size:12.5px;line-height:18px;">${contactBits.join(dot)}</div>
     </td>
   </tr>

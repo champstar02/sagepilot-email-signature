@@ -59,8 +59,10 @@ const MOUTH_PREFIX = 'd="M9.30672';
 const MOUTH_CX = 13.3;
 const MOUTH_CY = 20.7;
 
-function face({ eyes = 1, mouth = 1 } = {}) {
-  return inner
+// Squash the eye arcs / scale the smile inside any SVG source that carries the
+// mark's paths — works for both logo-mark.svg and the full logo.svg lockup.
+function applyFace(src, { eyes = 1, mouth = 1 } = {}) {
+  return src
     .split("\n")
     .map((line) => {
       const t = line.trim();
@@ -77,6 +79,7 @@ function face({ eyes = 1, mouth = 1 } = {}) {
     })
     .join("\n");
 }
+const face = (opts) => applyFace(inner, opts);
 
 const OPEN = { eyes: 1 };
 const HALF = { eyes: 0.5 };
@@ -117,6 +120,38 @@ const tileSeq = [
   { f: GRIN, ms: 750 },
   { f: GRIN_IN, ms: 70 },
 ];
+
+/* ------------------------------------------------------- full logo lockup
+ * The site's whole logo (mark + "sagepilot" wordmark) on the brand mint plate.
+ * The plate matters: the wordmark's "Sage" is near-black, and email clients
+ * invert TEXT in dark mode but never images — on a dark background a bare
+ * wordmark would vanish. The mint plate also matches the hero card and the
+ * avatar tile, so the set reads as one system. The robot still blinks.
+ */
+const logoInner = readFileSync(
+  "/Users/tharunbalaji/Desktop/Work/Projects/sagepilot-website/public/logo.svg",
+  "utf8",
+)
+  .replace(/<svg[\s\S]*?>/, "")
+  .replace(/<\/svg>\s*$/, "")
+  .trim();
+
+const LOGO_W = 128; // logo.svg viewBox
+const LOGO_H = 30;
+const LOGO_SCALE = 1.75; // 2x asset, wordmark drawn at ~112px display width
+const LOGO_PAD_X = 28;
+const LOGO_PAD_Y = 18;
+const LOCKUP_W = Math.round(LOGO_W * LOGO_SCALE + LOGO_PAD_X * 2);
+const LOCKUP_H = Math.round(LOGO_H * LOGO_SCALE + LOGO_PAD_Y * 2);
+
+function lockupSvg(faceOpts) {
+  return `<svg width="${LOCKUP_W}" height="${LOCKUP_H}" viewBox="0 0 ${LOCKUP_W} ${LOCKUP_H}" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>${MINT}</defs>
+  <rect x="1.5" y="1.5" width="${LOCKUP_W - 3}" height="${LOCKUP_H - 3}" rx="20" fill="url(#mint)" stroke="#C4E8D4" stroke-width="3"/>
+  <g transform="translate(${LOGO_PAD_X} ${LOGO_PAD_Y}) scale(${LOGO_SCALE})">${applyFace(logoInner, faceOpts)}</g>
+</svg>`;
+}
+const lockupPng = (f) => sharp(Buffer.from(lockupSvg(f))).png().toBuffer();
 
 /* ------------------------------------------------------------ text helpers */
 
@@ -405,6 +440,19 @@ await sharp(tileFrames, { join: { animated: true } })
   .gif({ delay: tileSeq.map((s) => s.ms), loop: 0 })
   .toFile(join(outDir, "sagepilot-mark-animated.gif"));
 writeFileSync(join(outDir, "sagepilot-mark.png"), await tilePng(OPEN));
+
+// Full-logo lockup, same blink beat as the avatar tile
+const lockupFrames = await Promise.all(tileSeq.map((s) => lockupPng(s.f)));
+await sharp(lockupFrames, { join: { animated: true } })
+  .gif({ delay: tileSeq.map((s) => s.ms), loop: 0, dither: 0, interFrameMaxError: 10 })
+  .toFile(join(outDir, "sagepilot-logo-animated.gif"));
+writeFileSync(join(outDir, "sagepilot-logo.png"), await lockupPng(OPEN));
+console.log(
+  "logo lockup:",
+  `${LOCKUP_W}x${LOCKUP_H}`,
+  "(display",
+  `${Math.round(LOCKUP_W / 2)}x${Math.round(LOCKUP_H / 2)})`,
+);
 
 const heroFrames = [];
 for (const s of heroSeq) heroFrames.push(await heroFrame(s.spec));
