@@ -174,6 +174,15 @@ const lockupPng = (f) => sharp(Buffer.from(lockupSvg(f))).png().toBuffer();
 const FAVICON = 32;
 const faviconSvg = `<svg width="${FAVICON}" height="${FAVICON}" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
 
+// LinkedIn mark for the name row (not in the website's icon set, so drawn
+// here). Official brand blue; 32px asset, 16px display.
+const linkedinSvg = `<svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <rect width="24" height="24" rx="5" fill="#0A66C2"/>
+  <circle cx="6.9" cy="6.9" r="1.9" fill="#FFFFFF"/>
+  <rect x="5.3" y="9.9" width="3.2" height="8.8" fill="#FFFFFF"/>
+  <path d="M10.6 9.9h3.05v1.2h.05c.45-.8 1.5-1.45 2.85-1.45 2.5 0 3.35 1.5 3.35 4v5.05h-3.2v-4.5c0-1.25-.25-2.1-1.5-2.1-1.15 0-1.6.8-1.6 2v4.6h-3z" fill="#FFFFFF"/>
+</svg>`;
+
 /* ------------------------------------------------------------ text helpers */
 
 const escXml = (s) =>
@@ -469,6 +478,7 @@ await sharp(lockupFrames, { join: { animated: true } })
   .toFile(join(outDir, "sagepilot-logo-animated.gif"));
 writeFileSync(join(outDir, "sagepilot-logo.png"), await lockupPng(OPEN));
 await sharp(Buffer.from(faviconSvg)).png().toFile(join(outDir, "sagepilot-icon.png"));
+await sharp(Buffer.from(linkedinSvg)).png().toFile(join(outDir, "icon-linkedin.png"));
 console.log(
   "logo lockup:",
   `${LOCKUP_W}x${LOCKUP_H}`,

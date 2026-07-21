@@ -182,6 +182,9 @@
       <input type="text" id="f-email" value="tharun.balaji@sagepilot.ai">
       <label>Phone (optional)</label>
       <input type="text" id="f-phone" value="" placeholder="+91 …">
+      <label>LinkedIn profile <span class="hint">— optional, shows an icon by your name</span></label>
+      <input type="text" id="f-linkedin" value="" placeholder="https://www.linkedin.com/in/…">
+
       <label>Demo / meeting link</label>
       <input type="text" id="f-demo" value="https://www.sagepilot.ai/request-demo">
       <label>Hosted asset base URL</label>
@@ -395,6 +398,13 @@ function sigHtml(forCopy) {
   const linkStyle = `color:#6F6F6F;text-decoration:none;`;
   const dot = `<span style="color:#C8C8C4;">&nbsp;&middot;&nbsp;</span>`;
 
+  // Optional LinkedIn mark right after the name. nbsp rather than a margin —
+  // Outlook strips margins on inline images.
+  const li = $("f-linkedin").value.trim();
+  const liIcon = li
+    ? `&nbsp;&nbsp;<a href="${esc(li)}" style="text-decoration:none;"><img src="${base}/icon-linkedin.png" width="15" height="15" alt="LinkedIn" style="display:inline-block;border:0;width:15px;height:15px;vertical-align:-2px;"></a>`
+    : "";
+
   // The site link carries the Sagepilot favicon so it reads as the website,
   // not just another word in the line.
   const siteLink =
@@ -426,7 +436,7 @@ function sigHtml(forCopy) {
     return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="420" style="width:420px;font-family:'Instrument Sans',Helvetica,Arial,sans-serif;">
   <tr>
     <td colspan="2">
-      <div style="font-size:17px;line-height:23px;font-weight:600;letter-spacing:-0.3px;color:#181818;">${name}</div>
+      <div style="font-size:17px;line-height:23px;font-weight:600;letter-spacing:-0.3px;color:#181818;">${name}${liIcon}</div>
       <div style="font-size:13px;line-height:19px;color:#6F6F6F;padding-top:1px;">${role}${role ? ",&nbsp;" : ""}${brandWord}</div>
     </td>
   </tr>
@@ -459,7 +469,7 @@ ${badgeRow(base)}
     </td>
     <td width="16"></td>
     <td style="vertical-align:middle;border-left:2px solid #BCF6DA;padding-left:16px;">
-      <div style="font-size:16px;line-height:22px;font-weight:600;letter-spacing:-0.2px;color:#181818;">${name}</div>
+      <div style="font-size:16px;line-height:22px;font-weight:600;letter-spacing:-0.2px;color:#181818;">${name}${liIcon}</div>
       <div style="font-size:13px;line-height:18px;color:#6F6F6F;padding-top:1px;">${role}</div>
     </td>
   </tr>
