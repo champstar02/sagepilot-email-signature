@@ -147,15 +147,56 @@ const CY = 106; // chip top
 const SPARKLE_PATHS = `<path d="M12.5 2.5l1.1 3.1a3 3 0 0 0 1.8 1.8l3.1 1.1-3.1 1.1a3 3 0 0 0-1.8 1.8l-1.1 3.1-1.1-3.1a3 3 0 0 0-1.8-1.8L6.5 8.5l3.1-1.1a3 3 0 0 0 1.8-1.8l1.1-3.1z"/>
 <path d="M5 12l.65 1.85a2 2 0 0 0 1.2 1.2L8.7 15.7l-1.85.65a2 2 0 0 0-1.2 1.2L5 19.4l-.65-1.85a2 2 0 0 0-1.2-1.2L1.3 15.7l1.85-.65a2 2 0 0 0 1.2-1.2L5 12z"/>`;
 
-function heroBase({ wm = 0.09, wmRot = 9, pulse = false, faceOpts = OPEN } = {}) {
+// Terminal-glyph field on the right: tiny green symbols scattered on the mint
+// gradient (the site's data/terminal motif). Seeded PRNG so frames are
+// reproducible; `phase` drifts the field upward and twinkles it per scene.
+function mulberry32(a) {
+  return function () {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const GLYPHS = ["+", "=", "~", "^", ";", ":", "-", "*", "+", "="];
+function glyphField(phase = 0) {
+  const rng = mulberry32(1337);
+  const X0 = 565;
+  const X1 = 828;
+  const Y0 = 6;
+  const Y1 = 186;
+  const items = [];
+  for (let k = 0; k < 68; k++) {
+    const gx = X0 + rng() * (X1 - X0);
+    const gy0 = Y0 + rng() * (Y1 - Y0);
+    const g = GLYPHS[Math.floor(rng() * GLYPHS.length)];
+    const size = 13 + rng() * 9;
+    const baseA = 0.2 + rng() * 0.24;
+    // slow upward drift, wrapping inside the band
+    const gy = Y0 + ((((gy0 - Y0) - phase * 7) % (Y1 - Y0)) + (Y1 - Y0)) % (Y1 - Y0);
+    // twinkle: each glyph on its own cycle across scenes
+    const tw = 0.72 + 0.28 * Math.sin(k * 2.399 + phase * 0.9);
+    // fade the field in from its left edge so it blends into the card
+    const edge = Math.min(1, (gx - X0) / 80 + 0.3);
+    items.push(
+      `<text x="${gx.toFixed(1)}" y="${gy.toFixed(1)}" font-family="Menlo, Monaco, monospace" font-size="${size.toFixed(1)}" fill="#1BB46A" opacity="${(baseA * tw * edge).toFixed(3)}">${g}</text>`,
+    );
+  }
+  return items.join("\n");
+}
+
+function heroBase({ fieldPhase = 0, pulse = false, faceOpts = OPEN } = {}) {
   const s = ROBOT_PX / 26;
   // status dot sits on the robot's bounding box corner
   const dotX = ROBOT_X + ROBOT_PX - 12;
   const dotY = ROBOT_Y + ROBOT_PX - 14;
   return `<svg width="${SW}" height="${SH}" viewBox="0 0 ${SW} ${SH}" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>${MINT}</defs>
+  <defs>${MINT}
+    <clipPath id="card"><rect x="2" y="2" width="${SW - 4}" height="${SH - 4}" rx="29"/></clipPath>
+  </defs>
   <rect x="1" y="1" width="${SW - 2}" height="${SH - 2}" rx="30" fill="url(#mint)" stroke="#CFEDDD" stroke-width="2"/>
-  <g transform="translate(694 18) scale(7.6) rotate(${wmRot} 10 10)" fill="#1BB46A" opacity="${wm}">${SPARKLE_PATHS}</g>
+  <g clip-path="url(#card)">${glyphField(fieldPhase)}</g>
   <g transform="translate(${ROBOT_X} ${ROBOT_Y}) scale(${s})">${face(faceOpts)}</g>
   <circle cx="${dotX}" cy="${dotY}" r="${pulse ? 15 : 12}" fill="#22E185" stroke="#F4FBF7" stroke-width="5" opacity="${pulse ? 0.8 : 1}"/>
 </svg>`;
@@ -302,14 +343,9 @@ async function heroFrame(spec) {
 
 const line = (i, tailAlpha) => ({ tail: SCENES[i].tail, preAlpha: 100, tailAlpha });
 
-// Sparkle watermark drifts once per SCENE (rotation + opacity), never per
-// frame — ambient background motion at ~1 extra repaint per scene, so the
-// delta-encoded GIF stays lean. WM is the static-PNG/QA default.
-const WM = 0.1;
-
 function holdSpec(i, faceOpts = OPEN) {
   return {
-    base: { wm: WM, faceOpts },
+    base: { fieldPhase: 0, faceOpts },
     lines: [line(i, 100)],
     chips: [{ label: SCENES[i].chip, icon: SCENES[i].icon, alpha: 100, dx: 0 }],
   };
@@ -321,9 +357,9 @@ function holdSpec(i, faceOpts = OPEN) {
 const heroSeq = [];
 for (let i = 0; i < SCENES.length; i++) {
   const j = (i + 1) % SCENES.length;
-  // Ambient sparkle drift: rotation and opacity shift once per scene — slow
-  // background motion across the loop at ~1 repaint per scene.
-  const sceneWm = { wm: i % 2 ? 0.105 : 0.085, wmRot: 7 + (i % 3) * 3 };
+  // Glyph field drifts and twinkles once per scene — slow background motion
+  // across the loop at ~1 repaint per scene.
+  const sceneWm = { fieldPhase: i };
   const push = (base, lines, chips, ms) => heroSeq.push({ spec: { base: { ...sceneWm, ...base }, lines, chips }, ms });
 
   push({ faceOpts: OPEN }, [line(i, 100)], [{ label: SCENES[i].chip, icon: SCENES[i].icon, alpha: 100 }], 1150);
@@ -393,12 +429,10 @@ async function badgePill(iconSvg, label) {
 }
 
 const shieldIcon = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l8 3v6c0 5.3-3.4 9.2-8 11-4.6-1.8-8-5.7-8-11V5l8-3z" fill="#179D5D"/><path d="M8.2 11.8l2.6 2.6 5-5.2" stroke="#FFFFFF" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-const medalIcon = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M8.5 13.5L6.5 22l5.5-3 5.5 3-2-8.5" fill="#179D5D" opacity="0.45"/><circle cx="12" cy="9" r="7" fill="#179D5D"/><path d="M9.3 9.1l1.9 1.9 3.5-3.6" stroke="#fff" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const g2Icon = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#FF492C"/><text x="12" y="16.2" font-family="Instrument Sans" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">G2</text></svg>`;
 
 const badges = [
   await badgePill(shieldIcon, "GDPR compliant"),
-  await badgePill(medalIcon, "ISO 27001"),
   await badgePill(g2Icon, "Users love us"),
 ];
 let bx = 0;
@@ -424,7 +458,7 @@ await sharp({
     { input: await heroFrame(holdSpec(0)), left: 8, top: 8 },
     {
       input: await heroFrame({
-        base: { wm: 0.1, pulse: true, faceOpts: SHUT },
+        base: { fieldPhase: 1, pulse: true, faceOpts: SHUT },
         lines: [line(1, 100)],
         chips: [{ typing: true, phase: 0, alpha: 100, dx: 0 }],
       }),
