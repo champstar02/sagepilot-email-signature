@@ -147,41 +147,56 @@ const CY = 106; // chip top
 const SPARKLE_PATHS = `<path d="M12.5 2.5l1.1 3.1a3 3 0 0 0 1.8 1.8l3.1 1.1-3.1 1.1a3 3 0 0 0-1.8 1.8l-1.1 3.1-1.1-3.1a3 3 0 0 0-1.8-1.8L6.5 8.5l3.1-1.1a3 3 0 0 0 1.8-1.8l1.1-3.1z"/>
 <path d="M5 12l.65 1.85a2 2 0 0 0 1.2 1.2L8.7 15.7l-1.85.65a2 2 0 0 0-1.2 1.2L5 19.4l-.65-1.85a2 2 0 0 0-1.2-1.2L1.3 15.7l1.85-.65a2 2 0 0 0 1.2-1.2L5 12z"/>`;
 
-// Terminal-glyph field on the right: tiny green symbols scattered on the mint
-// gradient (the site's data/terminal motif). Seeded PRNG so frames are
-// reproducible; `phase` drifts the field upward and twinkles it per scene.
-function mulberry32(a) {
-  return function () {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-const GLYPHS = ["+", "=", "~", "^", ";", ":", "-", "*", "+", "="];
+// The website's AsciiField "scatter" variant (src/components/home/
+// ascii-field.tsx), ported verbatim: same charset, same drifting density
+// patches, same per-cell hash gating, same per-glyph life cycles and
+// character swaps, same onTint (mint) palette. `phase` advances the same `t`
+// clock the site animates, one step per scene.
+const SCATTER_RAMP = "·.:;~-+=^*/\\#%@";
+const fieldHash = (a, b) => {
+  const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
+  return s - Math.floor(s);
+};
+const CELL = 24; // site hero uses cell={12}; this canvas renders at 2x
 function glyphField(phase = 0) {
-  const rng = mulberry32(1337);
-  const X0 = 565;
-  const X1 = 828;
-  const Y0 = 6;
-  const Y1 = 186;
+  const t = 2.5 + phase * 1.0; // site starts at t=2.5 and flows forward
   const items = [];
-  for (let k = 0; k < 68; k++) {
-    const gx = X0 + rng() * (X1 - X0);
-    const gy0 = Y0 + rng() * (Y1 - Y0);
-    const g = GLYPHS[Math.floor(rng() * GLYPHS.length)];
-    const size = 13 + rng() * 9;
-    const baseA = 0.2 + rng() * 0.24;
-    // slow upward drift, wrapping inside the band
-    const gy = Y0 + ((((gy0 - Y0) - phase * 7) % (Y1 - Y0)) + (Y1 - Y0)) % (Y1 - Y0);
-    // twinkle: each glyph on its own cycle across scenes
-    const tw = 0.72 + 0.28 * Math.sin(k * 2.399 + phase * 0.9);
-    // fade the field in from its left edge so it blends into the card
-    const edge = Math.min(1, (gx - X0) / 80 + 0.3);
-    items.push(
-      `<text x="${gx.toFixed(1)}" y="${gy.toFixed(1)}" font-family="Menlo, Monaco, monospace" font-size="${size.toFixed(1)}" fill="#1BB46A" opacity="${(baseA * tw * edge).toFixed(3)}">${g}</text>`,
-    );
+  const cols = Math.ceil(SW / CELL);
+  const rows = Math.ceil(SH / CELL);
+  const fontPx = Math.round(CELL * 0.78);
+  for (let i = 0; i <= cols; i++) {
+    for (let j = 0; j <= rows; j++) {
+      const x = i * CELL + CELL / 2;
+      const y = j * CELL + CELL / 2;
+      // drifting density patches decide WHERE glyphs may live
+      const wx = i + 2.2 * Math.sin(j * 0.09 + t * 0.16);
+      const wy = j + 2.2 * Math.sin(i * 0.08 - t * 0.13);
+      const field =
+        Math.sin(wx * 0.14 + t * 0.11) +
+        Math.sin(wy * 0.17 - t * 0.09) +
+        Math.sin((wx + wy) * 0.07 + t * 0.07);
+      const density = Math.pow(Math.min(1, Math.max(0, (field + 3) / 6)), 2.0);
+      const r = fieldHash(i, j);
+      if (r > density * 1.1) continue; // semi-random reveal
+      const life = 0.5 + 0.5 * Math.sin(t * (0.25 + r * 0.5) + r * 6.283);
+      const lum = density * (0.35 + 0.65 * life);
+      if (lum < 0.05) continue;
+      const swap = Math.floor(t * 0.3 + r * 9);
+      const charMix = density * 0.6 + fieldHash(i + swap, j - swap) * 0.4;
+      const ch =
+        SCATTER_RAMP[Math.min(SCATTER_RAMP.length - 1, Math.floor(charMix * SCATTER_RAMP.length))];
+      const accent = fieldHash(i + 13, j + 57) > 0.94;
+      // onTint palette: mint eats light greens — deep and heavy (site verbatim)
+      let alpha = accent ? 0.5 + lum * 0.4 : 0.18 + lum * 0.42;
+      const color = accent ? "#1BB46A" : "#117042";
+      // Like the site, the field runs the full card with the copy on top —
+      // but email type is small, so damp it over the robot and headline zone
+      // and let it come to full strength on the open right side.
+      alpha *= 0.34 + 0.66 * Math.min(1, Math.max(0, (x - 470) / 190));
+      items.push(
+        `<text x="${x}" y="${y + fontPx * 0.35}" text-anchor="middle" font-family="Menlo, Monaco, monospace" font-size="${fontPx}" fill="${color}" opacity="${alpha.toFixed(3)}">${escXml(ch)}</text>`,
+      );
+    }
   }
   return items.join("\n");
 }
