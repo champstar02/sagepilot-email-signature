@@ -172,17 +172,52 @@ async function linePng(tail, { preAlpha, tailAlpha }) {
     .toBuffer();
 }
 
-async function chipPng(label, alpha = 100) {
+// The site's ActionChip grammar: [app icon] green semibold text [sparkle].
+// Chips without an app icon lead with the sparkle instead.
+const iconCache = new Map();
+async function appIcon(name, size) {
+  const key = `${name}@${size}`;
+  if (!iconCache.has(key)) {
+    iconCache.set(
+      key,
+      await sharp(join(outDir, "apps", `${name}.png`)).resize(size, size).png().toBuffer(),
+    );
+  }
+  return iconCache.get(key);
+}
+
+async function chipPng(label, alpha = 100, icon = null) {
   const t = await text(label, {
     font: "Instrument Sans Semi-Bold 22",
     color: "#1BB46A",
     alpha,
   });
-  const padX = 17;
+  const padX = 16;
   const gap = 9;
   const h = 46;
-  const w = padX + 26 + gap + t.w + padX;
   const a = alpha / 100;
+  const overlays = [];
+  let w;
+  if (icon) {
+    const iconSize = 28;
+    const endSparkle = 20;
+    w = padX + iconSize + gap + t.w + 8 + endSparkle + 13;
+    const bg = `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0.75" y="0.75" width="${w - 1.5}" height="${h - 1.5}" rx="12" fill="#FFFFFF" fill-opacity="${a}" stroke="#DCEFE4" stroke-opacity="${a}" stroke-width="1.5"/>
+      <g transform="translate(${padX + iconSize + gap + t.w + 8} ${(h - endSparkle) / 2})" fill="#22E185" fill-opacity="${a}"><g transform="scale(1)">${SPARKLE_PATHS}</g></g>
+    </svg>`;
+    let iconBuf = await appIcon(icon, 28);
+    if (a < 1) {
+      const { data, info } = await sharp(iconBuf).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+      for (let p = 3; p < data.length; p += 4) data[p] = Math.round(data[p] * a);
+      iconBuf = await sharp(data, { raw: info }).png().toBuffer();
+    }
+    overlays.push({ input: iconBuf, left: padX, top: Math.round((h - 28) / 2) });
+    overlays.push({ input: t.buf, left: padX + 28 + gap, top: Math.round((h - t.h) / 2) });
+    const buf = await sharp(Buffer.from(bg)).composite(overlays).png().toBuffer();
+    return { buf, w, h };
+  }
+  w = padX + 26 + gap + t.w + padX;
   const bg = `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
     <rect x="0.75" y="0.75" width="${w - 1.5}" height="${h - 1.5}" rx="12" fill="#FFFFFF" fill-opacity="${a}" stroke="#DCEFE4" stroke-opacity="${a}" stroke-width="1.5"/>
     <g transform="translate(${padX} ${(h - 26) / 2}) scale(1.3)" fill="#22E185" fill-opacity="${a}">${SPARKLE_PATHS}</g>
@@ -214,21 +249,21 @@ async function typingPng(alpha, phase) {
 }
 
 const SCENES = [
-  { tail: "win every customer", chip: "Abandoned cart recovered" },
+  { tail: "win every customer", chip: "Abandoned cart recovered", icon: "shopify" },
   { tail: "serve every customer", chip: "Return resolved in 40 seconds" },
-  { tail: "grow every customer", chip: "Repeat order placed" },
-  { tail: "never sleep", chip: "Order query answered at 2 AM" },
-  { tail: "speak every language", chip: "Replied in Hindi and English" },
+  { tail: "grow every customer", chip: "Repeat order placed", icon: "shopify" },
+  { tail: "never sleep", chip: "Order query answered at 2 AM", icon: "whatsapp" },
+  { tail: "speak every language", chip: "Replied in Hindi and English", icon: "whatsapp" },
   { tail: "answer in seconds", chip: "First reply in 8 seconds" },
-  { tail: "recover every cart", chip: "Checkout nudge converted" },
+  { tail: "recover every cart", chip: "Checkout nudge converted", icon: "shopify" },
   { tail: "delight customers", chip: "Rated 5 stars after chat" },
-  { tail: "work every channel", chip: "WhatsApp and email handled" },
-  { tail: "handle every return", chip: "Exchange booked, sale saved" },
-  { tail: "know every order", chip: "Tracking sent before asked" },
-  { tail: "remember everyone", chip: "Birthday offer delivered" },
+  { tail: "work every channel", chip: "Instagram DM answered", icon: "instagram" },
+  { tail: "handle every return", chip: "Exchange booked, sale saved", icon: "shopify" },
+  { tail: "know every order", chip: "Tracking sent before asked", icon: "gmail" },
+  { tail: "remember everyone", chip: "Birthday offer delivered", icon: "whatsapp" },
   { tail: "upsell with taste", chip: "Size swap saved the sale" },
   { tail: "scale with you", chip: "1,200 chats this week" },
-  { tail: "close every loop", chip: "CRM updated automatically" },
+  { tail: "close every loop", chip: "CRM updated automatically", icon: "salesforce" },
 ];
 
 async function heroFrame(spec) {
@@ -246,7 +281,7 @@ async function heroFrame(spec) {
         top: CY + Math.round(c.dy || 0),
       });
     } else {
-      const chip = await chipPng(c.label, c.alpha);
+      const chip = await chipPng(c.label, c.alpha, c.icon);
       let input = chip.buf;
       let left = TX + Math.round(c.dx || 0);
       let top = CY + Math.round(c.dy || 0);
@@ -274,7 +309,7 @@ function holdSpec(i, faceOpts = OPEN) {
   return {
     base: { wm: WM, faceOpts },
     lines: [line(i, 100)],
-    chips: [{ label: SCENES[i].chip, alpha: 100, dx: 0 }],
+    chips: [{ label: SCENES[i].chip, icon: SCENES[i].icon, alpha: 100, dx: 0 }],
   };
 }
 
@@ -286,9 +321,9 @@ for (let i = 0; i < SCENES.length; i++) {
   const j = (i + 1) % SCENES.length;
   const push = (base, lines, chips, ms) => heroSeq.push({ spec: { base, lines, chips }, ms });
 
-  push({ wm: WM, faceOpts: OPEN }, [line(i, 100)], [{ label: SCENES[i].chip, alpha: 100 }], 1150);
+  push({ wm: WM, faceOpts: OPEN }, [line(i, 100)], [{ label: SCENES[i].chip, icon: SCENES[i].icon, alpha: 100 }], 1150);
   // old result fades while eyes close
-  push({ wm: WM, faceOpts: HALF }, [line(i, 55)], [{ label: SCENES[i].chip, alpha: 50 }], 70);
+  push({ wm: WM, faceOpts: HALF }, [line(i, 55)], [{ label: SCENES[i].chip, icon: SCENES[i].icon, alpha: 50 }], 70);
   // typing bubble slides up as the new headline fades in
   push({ wm: WM, pulse: true, faceOpts: SHUT }, [line(j, 55)], [{ typing: true, phase: 0, alpha: 55, dy: 8 }], 70);
   // three-beat typing wave, bubble settled
@@ -301,10 +336,10 @@ for (let i = 0; i < SCENES.length; i++) {
     );
   }
   // chip springs in: small -> overshoot -> settle, robot grins at it
-  push({ wm: WM, faceOpts: GRIN_IN }, [line(j, 100)], [{ label: SCENES[j].chip, alpha: 60, scale: 0.94, dy: 6 }], 60);
-  push({ wm: WM, faceOpts: GRIN }, [line(j, 100)], [{ label: SCENES[j].chip, alpha: 100, scale: 1.07 }], 70);
-  push({ wm: WM, faceOpts: GRIN }, [line(j, 100)], [{ label: SCENES[j].chip, alpha: 100 }], 640);
-  push({ wm: WM, faceOpts: GRIN_IN }, [line(j, 100)], [{ label: SCENES[j].chip, alpha: 100 }], 60);
+  push({ wm: WM, faceOpts: GRIN_IN }, [line(j, 100)], [{ label: SCENES[j].chip, icon: SCENES[j].icon, alpha: 60, scale: 0.94, dy: 6 }], 60);
+  push({ wm: WM, faceOpts: GRIN }, [line(j, 100)], [{ label: SCENES[j].chip, icon: SCENES[j].icon, alpha: 100, scale: 1.07 }], 70);
+  push({ wm: WM, faceOpts: GRIN }, [line(j, 100)], [{ label: SCENES[j].chip, icon: SCENES[j].icon, alpha: 100 }], 640);
+  push({ wm: WM, faceOpts: GRIN_IN }, [line(j, 100)], [{ label: SCENES[j].chip, icon: SCENES[j].icon, alpha: 100 }], 60);
 }
 
 /* ------------------------------------------------------------------- build */
@@ -332,6 +367,49 @@ await sharp(heroFrames, { join: { animated: true } })
   })
   .toFile(join(outDir, "sagepilot-hero-animated.gif"));
 writeFileSync(join(outDir, "sagepilot-hero.png"), await heroFrame(holdSpec(0)));
+
+/* ---- trust badges: GDPR / ISO 27001 / G2 as quiet white pills, one row ---- */
+async function badgePill(iconSvg, label) {
+  const t = await text(label, { font: "Instrument Sans Medium 19", color: "#6F6F6F" });
+  const padX = 14;
+  const gap = 8;
+  const h = 48;
+  const icon = 24;
+  const w = padX + icon + gap + t.w + padX;
+  const bg = `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0.75" y="0.75" width="${w - 1.5}" height="${h - 1.5}" rx="12" fill="#FFFFFF" stroke="#E7E7E3" stroke-width="1.5"/>
+    <g transform="translate(${padX} ${(h - icon) / 2})">${iconSvg}</g>
+  </svg>`;
+  const buf = await sharp(Buffer.from(bg))
+    .composite([{ input: t.buf, left: padX + icon + gap, top: Math.round((h - t.h) / 2) }])
+    .png()
+    .toBuffer();
+  return { buf, w, h };
+}
+
+const shieldIcon = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l8 3v6c0 5.3-3.4 9.2-8 11-4.6-1.8-8-5.7-8-11V5l8-3z" fill="#179D5D"/><path d="M8.2 11.8l2.6 2.6 5-5.2" stroke="#FFFFFF" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const medalIcon = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M8.5 13.5L6.5 22l5.5-3 5.5 3-2-8.5" fill="#179D5D" opacity="0.45"/><circle cx="12" cy="9" r="7" fill="#179D5D"/><path d="M9.3 9.1l1.9 1.9 3.5-3.6" stroke="#fff" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const g2Icon = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#FF492C"/><text x="12" y="16.2" font-family="Instrument Sans" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">G2</text></svg>`;
+
+const badges = [
+  await badgePill(shieldIcon, "GDPR compliant"),
+  await badgePill(medalIcon, "ISO 27001"),
+  await badgePill(g2Icon, "Users love us"),
+];
+let bx = 0;
+const badgeOverlays = [];
+for (const b of badges) {
+  badgeOverlays.push({ input: b.buf, left: bx, top: 0 });
+  bx += b.w + 12;
+}
+const badgeW = bx - 12;
+await sharp({
+  create: { width: badgeW, height: 48, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+})
+  .composite(badgeOverlays)
+  .png()
+  .toFile(join(outDir, "sagepilot-badges.png"));
+console.log("badges strip:", badgeW, "x 48  (display", Math.round(badgeW / 2), "x 24)");
 
 // QA sheet: hero hold / typing / grin
 await sharp({
