@@ -424,46 +424,89 @@ await sharp(heroFrames, { join: { animated: true } })
   .toFile(join(outDir, "sagepilot-hero-animated.gif"));
 writeFileSync(join(outDir, "sagepilot-hero.png"), await heroFrame(holdSpec(0)));
 
-/* ---- trust badges: GDPR / ISO 27001 / G2 as quiet white pills, one row ---- */
-async function badgePill(iconSvg, label) {
+/* ---- trust badges ----------------------------------------------------------
+ * One PNG per badge (assets/badges/<id>.png) so the builder UI can mix and
+ * match them; the signature lays the chosen ones out as a row of images.
+ * Rendered at 2x (48px tall -> 24px display), quiet white pill + mint hairline
+ * to match the hero's ActionChips.
+ */
+async function badgePill(icon, label) {
   const t = await text(label, { font: "Instrument Sans Medium 19", color: "#6F6F6F" });
   const padX = 14;
   const gap = 8;
   const h = 48;
-  const icon = 24;
-  const w = padX + icon + gap + t.w + padX;
+  const iconSize = 24;
+  const w = padX + iconSize + gap + t.w + padX;
+  const inlineSvg = typeof icon === "string" ? icon : "";
   const bg = `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
     <rect x="0.75" y="0.75" width="${w - 1.5}" height="${h - 1.5}" rx="12" fill="#FFFFFF" stroke="#DCEFE4" stroke-width="1.5"/>
-    <g transform="translate(${padX} ${(h - icon) / 2})">${iconSvg}</g>
+    <g transform="translate(${padX} ${(h - iconSize) / 2})">${inlineSvg}</g>
   </svg>`;
-  const buf = await sharp(Buffer.from(bg))
-    .composite([{ input: t.buf, left: padX + icon + gap, top: Math.round((h - t.h) / 2) }])
-    .png()
-    .toBuffer();
+  const overlays = [{ input: t.buf, left: padX + iconSize + gap, top: Math.round((h - t.h) / 2) }];
+  if (typeof icon !== "string" && icon.png) {
+    overlays.unshift({
+      input: await appIcon(icon.png, iconSize),
+      left: padX,
+      top: Math.round((h - iconSize) / 2),
+    });
+  }
+  const buf = await sharp(Buffer.from(bg)).composite(overlays).png().toBuffer();
   return { buf, w, h };
 }
 
-const shieldIcon = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l8 3v6c0 5.3-3.4 9.2-8 11-4.6-1.8-8-5.7-8-11V5l8-3z" fill="#179D5D"/><path d="M8.2 11.8l2.6 2.6 5-5.2" stroke="#FFFFFF" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-const g2Icon = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#FF492C"/><text x="12" y="16.2" font-family="Instrument Sans" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">G2</text></svg>`;
+const ic = {
+  shield: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l8 3v6c0 5.3-3.4 9.2-8 11-4.6-1.8-8-5.7-8-11V5l8-3z" fill="#179D5D"/><path d="M8.2 11.8l2.6 2.6 5-5.2" stroke="#FFFFFF" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  lock: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l8 3v6c0 5.3-3.4 9.2-8 11-4.6-1.8-8-5.7-8-11V5l8-3z" fill="#179D5D"/><rect x="8.4" y="11" width="7.2" height="6" rx="1.4" fill="#FFFFFF"/><path d="M9.9 11V9.6a2.1 2.1 0 0 1 4.2 0V11" stroke="#FFFFFF" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>`,
+  medal: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M8.5 13.5L6.5 22l5.5-3 5.5 3-2-8.5" fill="#179D5D" opacity="0.45"/><circle cx="12" cy="9" r="7" fill="#179D5D"/><path d="M9.3 9.1l1.9 1.9 3.5-3.6" stroke="#fff" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  g2: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#FF492C"/><text x="12" y="16.2" font-family="Instrument Sans" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">G2</text></svg>`,
+  star: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.6l2.9 5.9 6.5.95-4.7 4.6 1.1 6.45L12 17.45 6.2 20.5l1.1-6.45-4.7-4.6 6.5-.95L12 2.6z" fill="#F5A623"/></svg>`,
+  pulse: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#E8FCF2"/><path d="M4.5 12.4h3.2l2.1-5 3 9.6 2.2-4.6h4.4" stroke="#179D5D" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  clock: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#179D5D"/><path d="M12 6.6V12l3.6 2.2" stroke="#FFFFFF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  bolt: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#E8FCF2"/><path d="M13.2 3.8L6.6 13.4h4.3l-.9 6.6 6.6-9.6h-4.3l.9-6.6z" fill="#179D5D"/></svg>`,
+};
 
-const badges = [
-  await badgePill(shieldIcon, "GDPR compliant"),
-  await badgePill(g2Icon, "Users love us"),
+// id -> label + icon. Add entries here and they show up in the builder UI.
+const BADGE_CATALOG = [
+  ["gdpr", "GDPR compliant", ic.shield],
+  ["dpdp", "DPDP ready", ic.lock],
+  ["soc2", "SOC 2 Type II", ic.lock],
+  ["iso27001", "ISO 27001", ic.medal],
+  ["g2", "Users love us", ic.g2],
+  ["g2rating", "4.8 on G2", ic.star],
+  ["uptime", "99.9% uptime", ic.pulse],
+  ["support", "24/7 coverage", ic.clock],
+  ["fastsetup", "Live in 2 weeks", ic.bolt],
+  ["shopify", "Shopify Partner", { png: "shopify" }],
 ];
-let bx = 0;
-const badgeOverlays = [];
-for (const b of badges) {
-  badgeOverlays.push({ input: b.buf, left: bx, top: 0 });
-  bx += b.w + 12;
+
+mkdirSync(join(outDir, "badges"), { recursive: true });
+const badgeManifest = {};
+for (const [id, label, icon] of BADGE_CATALOG) {
+  const b = await badgePill(icon, label);
+  writeFileSync(join(outDir, "badges", `${id}.png`), b.buf);
+  // display size is half the rendered size (2x assets)
+  badgeManifest[id] = { label, w: Math.round(b.w / 2), h: Math.round(b.h / 2) };
 }
-const badgeW = bx - 12;
-await sharp({
-  create: { width: badgeW, height: 48, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
-})
-  .composite(badgeOverlays)
-  .png()
-  .toFile(join(outDir, "sagepilot-badges.png"));
-console.log("badges strip:", badgeW, "x 48  (display", Math.round(badgeW / 2), "x 24)");
+writeFileSync(
+  join(outDir, "badges", "manifest.json"),
+  JSON.stringify(badgeManifest, null, 2),
+);
+
+// Keep the builder's badge list in sync automatically.
+const builderPath = join(root, "signature-builder.html");
+const builderSrc = readFileSync(builderPath, "utf8");
+const block = `/* BADGES:START — generated by scripts/generate-assets.mjs, do not edit by hand */
+const BADGES = ${JSON.stringify(badgeManifest, null, 2)};
+/* BADGES:END */`;
+const patched = builderSrc.replace(
+  /\/\* BADGES:START[\s\S]*?\/\* BADGES:END \*\//,
+  block,
+);
+if (patched !== builderSrc) {
+  writeFileSync(builderPath, patched);
+  console.log("builder badge manifest updated");
+}
+console.log("badges:", Object.keys(badgeManifest).join(", "));
 
 // QA sheet: hero hold / typing / grin
 await sharp({

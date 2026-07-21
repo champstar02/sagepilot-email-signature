@@ -1,0 +1,52 @@
+{
+  "gdpr": {
+    "label": "GDPR compliant",
+    "w": 102,
+    "h": 24
+  },
+  "dpdp": {
+    "label": "DPDP ready",
+    "w": 84,
+    "h": 24
+  },
+  "soc2": {
+    "label": "SOC 2 Type II",
+    "w": 90,
+    "h": 24
+  },
+  "iso27001": {
+    "label": "ISO 27001",
+    "w": 74,
+    "h": 24
+  },
+  "g2": {
+    "label": "Users love us",
+    "w": 88,
+    "h": 24
+  },
+  "g2rating": {
+    "label": "4.8 on G2",
+    "w": 72,
+    "h": 24
+  },
+  "uptime": {
+    "label": "99.9% uptime",
+    "w": 89,
+    "h": 24
+  },
+  "support": {
+    "label": "24/7 coverage",
+    "w": 92,
+    "h": 24
+  },
+  "fastsetup": {
+    "label": "Live in 2 weeks",
+    "w": 96,
+    "h": 24
+  },
+  "shopify": {
+    "label": "Shopify Partner",
+    "w": 97,
+    "h": 24
+  }
+}
