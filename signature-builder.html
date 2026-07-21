@@ -395,9 +395,16 @@ function sigHtml(forCopy) {
   const linkStyle = `color:#6F6F6F;text-decoration:none;`;
   const dot = `<span style="color:#C8C8C4;">&nbsp;&middot;&nbsp;</span>`;
 
+  // The site link carries the Sagepilot favicon so it reads as the website,
+  // not just another word in the line.
+  const siteLink =
+    `<a href="${site}" style="${linkStyle}">` +
+    `<img src="${base}/sagepilot-icon.png" width="14" height="14" alt="" style="display:inline-block;border:0;width:14px;height:14px;vertical-align:-2px;">` +
+    `&nbsp;sagepilot.ai</a>`;
+
   const contactBits = [
     `<a href="mailto:${esc(email)}" style="${linkStyle}">${esc(email)}</a>`,
-    `<a href="${site}" style="${linkStyle}">sagepilot.ai</a>`,
+    siteLink,
   ];
   if (phone) contactBits.push(`<span style="color:#6F6F6F;">${esc(phone)}</span>`);
 

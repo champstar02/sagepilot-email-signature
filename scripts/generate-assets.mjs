@@ -150,6 +150,11 @@ function lockupSvg(faceOpts) {
 }
 const lockupPng = (f) => sharp(Buffer.from(lockupSvg(f))).png().toBuffer();
 
+// Favicon-sized bare mark for the "sagepilot.ai" contact link. 32px asset,
+// 16px display. The face is bright green, so it holds up on dark backgrounds.
+const FAVICON = 32;
+const faviconSvg = `<svg width="${FAVICON}" height="${FAVICON}" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
+
 /* ------------------------------------------------------------ text helpers */
 
 const escXml = (s) =>
@@ -444,6 +449,7 @@ await sharp(lockupFrames, { join: { animated: true } })
   .gif({ delay: tileSeq.map((s) => s.ms), loop: 0, dither: 0, interFrameMaxError: 10 })
   .toFile(join(outDir, "sagepilot-logo-animated.gif"));
 writeFileSync(join(outDir, "sagepilot-logo.png"), await lockupPng(OPEN));
+await sharp(Buffer.from(faviconSvg)).png().toFile(join(outDir, "sagepilot-icon.png"));
 console.log(
   "logo lockup:",
   `${LOCKUP_W}x${LOCKUP_H}`,
