@@ -22,6 +22,14 @@ the site), the hero scene, and one action line — "Hire your first AI
 employee →" CTA left (links to /request-demo), quiet email right. Compact
 variant = mint avatar tile + name + contacts.
 
+## Share this with the team
+
+**https://champstar02.github.io/sagepilot-email-signature/**
+
+Anyone on the team opens that link, types their name and role, picks badges,
+clicks **Copy signature**, and pastes into Gmail. Nothing to install, and the
+images come from the CDN so they work in everyone's mail client.
+
 ## Use it
 
 Open **signature-builder.html** in a browser. Fill in your details, click
