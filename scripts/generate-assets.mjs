@@ -106,19 +106,38 @@ function tileSvg(faceOpts) {
 }
 const tilePng = (f) => sharp(Buffer.from(tileSvg(f))).png().toBuffer();
 
+/* A blink only reads as smooth with eased in-between steps — 1 -> .5 -> .15
+   stutters because the eye teleports. Real eyes also close faster than they
+   open, so the closing ramp is shorter than the opening one. 40ms/frame is
+   the shortest delay every mail client honours (below ~2cs many clamp to
+   100ms, which is what makes GIFs feel laggy). */
+const BLINK_MS = 40;
+const CLOSING = [0.74, 0.44, 0.18];
+const OPENING = [0.2, 0.42, 0.66, 0.86];
+const blink = (holdMs = 50) => [
+  ...CLOSING.map((e) => ({ f: { eyes: e }, ms: BLINK_MS })),
+  { f: SHUT, ms: holdMs },
+  ...OPENING.map((e) => ({ f: { eyes: e }, ms: BLINK_MS })),
+];
+
+// Grin: ease in, hold, ease back out so the loop doesn't snap.
+const GRIN_IN_STEPS = [
+  { eyes: 0.86, mouth: 1.03 },
+  { eyes: 0.64, mouth: 1.08 },
+];
+const grin = () => [
+  ...GRIN_IN_STEPS.map((f) => ({ f, ms: BLINK_MS })),
+  { f: GRIN, ms: 620 },
+  ...[...GRIN_IN_STEPS].reverse().map((f) => ({ f, ms: BLINK_MS })),
+];
+
 const tileSeq = [
-  { f: OPEN, ms: 2200 },
-  { f: HALF, ms: 40 },
-  { f: SHUT, ms: 70 },
-  { f: HALF, ms: 40 },
-  { f: OPEN, ms: 200 },
-  { f: HALF, ms: 40 },
-  { f: SHUT, ms: 70 },
-  { f: HALF, ms: 40 },
-  { f: OPEN, ms: 1300 },
-  { f: GRIN_IN, ms: 70 },
-  { f: GRIN, ms: 750 },
-  { f: GRIN_IN, ms: 70 },
+  { f: OPEN, ms: 2400 },
+  ...blink(),
+  { f: OPEN, ms: 190 },
+  ...blink(),
+  { f: OPEN, ms: 1500 },
+  ...grin(),
 ];
 
 /* ------------------------------------------------------- full logo lockup
@@ -526,7 +545,7 @@ const BADGE_CATALOG = [
   ["g2rating", "4.8 on G2", ic.star],
   ["uptime", "99.9% uptime", ic.pulse],
   ["support", "24/7 coverage", ic.clock],
-  ["fastsetup", "Live in 2 weeks", ic.bolt],
+  ["fastsetup", "Live in 48 hours", ic.bolt],
   ["shopify", "Shopify Partner", { png: "shopify" }],
 ];
 
