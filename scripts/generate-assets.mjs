@@ -485,11 +485,8 @@ writeFileSync(join(outDir, "sagepilot-logo.png"), await lockupPng(OPEN));
 await sharp(Buffer.from(faviconSvg)).png().toFile(join(outDir, "sagepilot-icon.png"));
 await sharp(Buffer.from(linkedinSvg)).png().toFile(join(outDir, "icon-linkedin.png"));
 
-// Inline (text-sized) logo, still blinking
-const inlineFrames = await Promise.all(tileSeq.map((s) => inlineLogoPng(s.f)));
-await sharp(inlineFrames, { join: { animated: true } })
-  .gif({ delay: tileSeq.map((s) => s.ms), loop: 0, dither: 0, interFrameMaxError: 10 })
-  .toFile(join(outDir, "sagepilot-logo-inline-animated.gif"));
+// Inline (text-sized) logo — static only: at 15px tall a blink reads as a
+// glitch, so the role line keeps a plain logo.
 writeFileSync(join(outDir, "sagepilot-logo-inline.png"), await inlineLogoPng(OPEN));
 console.log(
   "logo lockup:",
