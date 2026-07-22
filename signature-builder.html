@@ -185,7 +185,10 @@
       <label>LinkedIn profile <span class="hint">— optional, shows an icon by your name</span></label>
       <input type="text" id="f-linkedin" value="" placeholder="https://www.linkedin.com/in/…">
 
-      <label>Demo / meeting link</label>
+      <label>Button text <span class="hint">— your own wording</span></label>
+      <input type="text" id="f-cta" value="Hire your first AI employee">
+
+      <label>Button link <span class="hint">— demo / meeting</span></label>
       <input type="text" id="f-demo" value="https://www.sagepilot.ai/request-demo">
       <label>Hosted asset base URL</label>
       <input type="text" id="f-base" value="https://cdn.jsdelivr.net/gh/champstar02/sagepilot-email-signature@v11/assets">
@@ -390,6 +393,7 @@ function sigHtml(forCopy) {
   const email = $("f-email").value.trim();
   const phone = $("f-phone").value.trim();
   const demo = $("f-demo").value.trim();
+  const cta = esc($("f-cta").value.trim() || "Book a demo");
   const base = forCopy ? $("f-base").value.trim().replace(/\/+$/, "") : "assets";
   const logoFile = state.logo === "animated" ? "sagepilot-mark-animated.gif" : "sagepilot-mark.png";
 
@@ -448,10 +452,14 @@ function sigHtml(forCopy) {
     </td>
   </tr>
   <tr>
-    <td style="padding-top:11px;">
-      <a href="${esc(demo)}" style="font-size:13.5px;line-height:19px;font-weight:500;color:#181818;text-decoration:none;white-space:nowrap;">Hire your first AI employee&nbsp;<span style="color:#1ECA77;">&#8594;</span></a>
+    <td style="padding-top:12px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td style="background-color:#181818;border-radius:6px;">
+          <a href="${esc(demo)}" style="display:inline-block;padding:10px 16px;font-size:13.5px;line-height:1;font-weight:500;color:#FFFFFF;text-decoration:none;border-radius:6px;white-space:nowrap;">${cta}&nbsp;&nbsp;&#8594;</a>
+        </td>
+      </tr></table>
     </td>
-    <td style="padding-top:11px;text-align:right;">
+    <td style="padding-top:12px;text-align:right;vertical-align:middle;">
       <span style="font-size:12.5px;line-height:19px;">${rightBits.join(dot)}</span>
     </td>
   </tr>
@@ -492,7 +500,9 @@ function sigText() {
   const phone = $("f-phone").value.trim();
   if (phone) lines.push(phone);
   if (state.variant === "full")
-    lines.push("Hire your first AI employee: " + $("f-demo").value.trim());
+    lines.push(
+      ($("f-cta").value.trim() || "Book a demo") + ": " + $("f-demo").value.trim(),
+    );
   return lines.join("\n");
 }
 
