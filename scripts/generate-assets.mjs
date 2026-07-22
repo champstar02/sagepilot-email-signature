@@ -378,20 +378,16 @@ async function typingPng(alpha, phase) {
 // motif ("real app icons, full color") folded into the chips.
 const SCENES = [
   { tail: "win every customer", chip: "Abandoned cart recovered", icon: "shopify" },
-  { tail: "serve every customer", chip: "Return resolved in 40 seconds", icon: "loopreturns" },
-  { tail: "grow every customer", chip: "Repeat order placed", icon: "shopify" },
+  { tail: "serve every customer", chip: "Replied to customer email", icon: "gmail" },
   { tail: "never sleep", chip: "Order query answered at 2 AM", icon: "whatsapp" },
-  { tail: "speak every language", chip: "Replied in Hindi and English", icon: "whatsapp" },
-  { tail: "answer in seconds", chip: "First reply in 8 seconds", icon: "intercom" },
-  { tail: "recover every cart", chip: "Payment link converted", icon: "razorpay" },
-  { tail: "delight customers", chip: "Rated 5 stars after chat", icon: "judgeme" },
+  { tail: "delight customers", chip: "Replied to review", icon: "judgeme" },
   { tail: "work every channel", chip: "Instagram DM answered", icon: "instagram" },
-  { tail: "handle every return", chip: "Exchange booked, sale saved", icon: "shiprocket" },
-  { tail: "know every order", chip: "Tracking sent before asked", icon: "gmail" },
-  { tail: "remember everyone", chip: "Birthday offer delivered", icon: "klaviyo" },
+  { tail: "handle every return", chip: "Replacement order booked", icon: "shiprocket" },
+  { tail: "recover every cart", chip: "Payment link converted", icon: "razorpay" },
+  { tail: "answer in seconds", chip: "Replied to customer email", icon: "outlook" },
+  { tail: "grow every customer", chip: "Repeat order placed", icon: "shopify" },
   { tail: "upsell with taste", chip: "Size swap saved the sale", icon: "messenger" },
-  { tail: "scale with you", chip: "1,200 tickets this week", icon: "zendesk" },
-  { tail: "close every loop", chip: "CRM updated automatically", icon: "salesforce" },
+  { tail: "speak every language", chip: "Replied in Hindi and English", icon: "whatsapp" },
 ];
 
 async function heroFrame(spec) {
