@@ -179,6 +179,15 @@ const inlineLogoPng = (f) => sharp(Buffer.from(lockupSvgAt(f, 1))).png().toBuffe
 const FAVICON = 32;
 const faviconSvg = `<svg width="${FAVICON}" height="${FAVICON}" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
 
+// Globe for the website link. Neutral grey rather than brand green: it is a
+// functional icon, and mid-grey stays legible on both light and dark
+// backgrounds (email clients never invert images).
+const globeSvg = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8C8C8C" stroke-width="1.9" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="12" cy="12" r="9.1"/>
+  <ellipse cx="12" cy="12" rx="4.1" ry="9.1"/>
+  <path d="M3.4 9.1h17.2M3.4 14.9h17.2"/>
+</svg>`;
+
 // LinkedIn mark for the name row (not in the website's icon set, so drawn
 // here). Official brand blue; 32px asset, 16px display.
 const linkedinSvg = `<svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -480,6 +489,7 @@ await sharp(lockupFrames, { join: { animated: true } })
 writeFileSync(join(outDir, "sagepilot-logo.png"), await lockupPng(OPEN));
 await sharp(Buffer.from(faviconSvg)).png().toFile(join(outDir, "sagepilot-icon.png"));
 await sharp(Buffer.from(linkedinSvg)).png().toFile(join(outDir, "icon-linkedin.png"));
+await sharp(Buffer.from(globeSvg)).png().toFile(join(outDir, "icon-globe.png"));
 
 // Inline (text-sized) logo — static only: at 15px tall a blink reads as a
 // glitch, so the role line keeps a plain logo.

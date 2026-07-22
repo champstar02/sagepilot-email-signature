@@ -411,11 +411,11 @@ function sigHtml(forCopy) {
     ? `&nbsp;&nbsp;<a href="${esc(li)}" style="text-decoration:none;"><img src="${base}/icon-linkedin.png" width="15" height="15" alt="LinkedIn" style="display:inline-block;border:0;width:15px;height:15px;vertical-align:-2px;"></a>`
     : "";
 
-  // The site link carries the Sagepilot favicon so it reads as the website,
-  // not just another word in the line.
+  // A globe, not the Sagepilot mark — the logo already sits above this line in
+  // the compact layout, so repeating the robot reads as duplication.
   const siteLink =
     `<a href="${site}" style="${linkStyle}">` +
-    `<img src="${base}/sagepilot-icon.png" width="14" height="14" alt="" style="display:inline-block;border:0;width:14px;height:14px;vertical-align:-2px;">` +
+    `<img src="${base}/icon-globe.png" width="13" height="13" alt="" style="display:inline-block;border:0;width:13px;height:13px;vertical-align:-2px;">` +
     `&nbsp;sagepilot.ai</a>`;
 
   const contactBits = [
