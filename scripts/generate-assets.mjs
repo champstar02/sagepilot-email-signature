@@ -509,6 +509,49 @@ await sharp(heroFrames, { join: { animated: true } })
   .toFile(join(outDir, "sagepilot-hero-animated.gif"));
 writeFileSync(join(outDir, "sagepilot-hero.png"), await heroFrame(holdSpec(0)));
 
+/* ---- CTA button shimmer ----------------------------------------------------
+ * A slow, faint light sweep used as the button cell's background-image, with
+ * the label rendered as live HTML on top — the label is user-editable, so it
+ * cannot be baked into the image. Opaque (GIF has no partial alpha, so the
+ * highlight must be composited over the ink base), and wide enough to cover
+ * the whole signature so the button never shows a seam.
+ */
+{
+  const w = 420;
+  const h = 44;
+  const band = 120;
+  const frame = (x) => `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="s" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.085"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="${w}" height="${h}" fill="#181818"/>
+  <g transform="translate(${x} 0) skewX(-16)">
+    <rect x="${-band / 2}" y="-12" width="${band}" height="${h + 24}" fill="url(#s)"/>
+  </g>
+</svg>`;
+
+  const steps = 18;
+  const frames = [];
+  const delays = [];
+  for (let i = 0; i < steps; i++) {
+    const x = -90 + ((w + 180) * i) / (steps - 1);
+    frames.push(await sharp(Buffer.from(frame(x))).png().toBuffer());
+    delays.push(55);
+  }
+  // long rest between sweeps — the effect should register, not nag
+  frames.push(await sharp(Buffer.from(frame(-400))).png().toBuffer());
+  delays.push(4200);
+
+  await sharp(frames, { join: { animated: true } })
+    .gif({ delay: delays, loop: 0, effort: 10, interFrameMaxError: 6 })
+    .toFile(join(outDir, "btn-shimmer.gif"));
+  console.log("button shimmer:", `${w}x${h}`, steps + 1, "frames");
+}
+
 // Contact sheet of every scene in the hero loop, for reference/QA.
 {
   const scale = 0.62;

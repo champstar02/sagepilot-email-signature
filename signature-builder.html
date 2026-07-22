@@ -113,8 +113,10 @@
   .window.dark [style*="color:#C8C8C4"] { color: #6E6E6E !important; }
   .window.dark [style*="color:#179D5D"] { color: #2FCB7F !important; }
   .window.dark [style*="color:#1ECA77"] { color: #2FDB88 !important; }
-  .window.dark [style*="background-color:#181818"] { background-color: #F2F2F2 !important; }
-  .window.dark td[style*="background-color:#181818"] a { color: #181818 !important; }
+  /* The CTA keeps its shimmer GIF (opaque) in dark mode, so it stays dark with
+     white text — only plain ink fills invert. */
+  .window.dark [style*="background-color:#181818"]:not([style*="background-image"]) { background-color: #F2F2F2 !important; }
+  .window.dark td[style*="background-color:#181818"]:not([style*="background-image"]) a { color: #181818 !important; }
   .window.dark [style*="background-color:#E8FCF2"] { background-color: #16211B !important; border-color: #2C4437 !important; }
   .window.dark a[style*="background-color:#E8FCF2"] { color: #E6E6E6 !important; }
   .window.dark table[style*="background-color:#FFFFFF"] { background-color: #191919 !important; border-color: #333330 !important; }
@@ -454,7 +456,7 @@ function sigHtml(forCopy) {
   <tr>
     <td style="padding-top:12px;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-        <td style="background-color:#181818;border-radius:6px;">
+        <td style="background-color:#181818;background-image:url('${base}/btn-shimmer.gif');background-repeat:no-repeat;background-position:left center;border-radius:6px;">
           <a href="${esc(demo)}" style="display:inline-block;padding:10px 16px;font-size:13.5px;line-height:1;font-weight:500;color:#FFFFFF;text-decoration:none;border-radius:6px;white-space:nowrap;">${cta}&nbsp;&nbsp;&#8594;</a>
         </td>
       </tr></table>
