@@ -423,10 +423,15 @@ function sigHtml(forCopy) {
   const rightBits = [`<a href="mailto:${esc(email)}" style="${linkStyle}">${esc(email)}</a>`];
   if (phone) rightBits.push(`<span style="color:#6F6F6F;">${esc(phone)}</span>`);
 
+  // The real logo at text size (still blinking) instead of typed-out
+  // "Sagepilot" — 64x15 display from a 128x30 asset, so it stays 2x crisp.
+  const inlineLogoFile =
+    state.logo === "animated"
+      ? "sagepilot-logo-inline-animated.gif"
+      : "sagepilot-logo-inline.png";
   const brandWord =
     `<a href="${site}" style="text-decoration:none;">` +
-    `<span style="font-weight:600;color:#181818;">Sage</span>` +
-    `<span style="font-weight:600;color:${green};">pilot</span></a>`;
+    `<img src="${base}/${inlineLogoFile}" width="64" height="15" alt="Sagepilot" style="display:inline-block;border:0;width:64px;height:15px;vertical-align:-3px;"></a>`;
 
   const heroFile = state.logo === "animated" ? "sagepilot-hero-animated.gif" : "sagepilot-hero.png";
 

@@ -162,12 +162,17 @@ const LOCKUP_W = LOGO_W * LOGO_SCALE;
 const LOCKUP_H = LOGO_H * LOGO_SCALE;
 
 // Bare logo on transparency — no plate, no padding.
-function lockupSvg(faceOpts) {
-  return `<svg width="${LOCKUP_W}" height="${LOCKUP_H}" viewBox="0 0 ${LOCKUP_W} ${LOCKUP_H}" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g transform="scale(${LOGO_SCALE})">${applyFace(logoInner, faceOpts)}</g>
+function lockupSvgAt(faceOpts, scale) {
+  const w = LOGO_W * scale;
+  const h = LOGO_H * scale;
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g transform="scale(${scale})">${applyFace(logoInner, faceOpts)}</g>
 </svg>`;
 }
-const lockupPng = (f) => sharp(Buffer.from(lockupSvg(f))).png().toBuffer();
+const lockupPng = (f) => sharp(Buffer.from(lockupSvgAt(f, LOGO_SCALE))).png().toBuffer();
+// Text-sized lockup for inline use in the role line: 128x30 asset, 64x15
+// display — 2x retina at the size of the surrounding 13px type.
+const inlineLogoPng = (f) => sharp(Buffer.from(lockupSvgAt(f, 1))).png().toBuffer();
 
 // Favicon-sized bare mark for the "sagepilot.ai" contact link. 32px asset,
 // 16px display. The face is bright green, so it holds up on dark backgrounds.
@@ -479,6 +484,13 @@ await sharp(lockupFrames, { join: { animated: true } })
 writeFileSync(join(outDir, "sagepilot-logo.png"), await lockupPng(OPEN));
 await sharp(Buffer.from(faviconSvg)).png().toFile(join(outDir, "sagepilot-icon.png"));
 await sharp(Buffer.from(linkedinSvg)).png().toFile(join(outDir, "icon-linkedin.png"));
+
+// Inline (text-sized) logo, still blinking
+const inlineFrames = await Promise.all(tileSeq.map((s) => inlineLogoPng(s.f)));
+await sharp(inlineFrames, { join: { animated: true } })
+  .gif({ delay: tileSeq.map((s) => s.ms), loop: 0, dither: 0, interFrameMaxError: 10 })
+  .toFile(join(outDir, "sagepilot-logo-inline-animated.gif"));
+writeFileSync(join(outDir, "sagepilot-logo-inline.png"), await inlineLogoPng(OPEN));
 console.log(
   "logo lockup:",
   `${LOCKUP_W}x${LOCKUP_H}`,
@@ -503,6 +515,32 @@ await sharp(heroFrames, { join: { animated: true } })
   })
   .toFile(join(outDir, "sagepilot-hero-animated.gif"));
 writeFileSync(join(outDir, "sagepilot-hero.png"), await heroFrame(holdSpec(0)));
+
+// Contact sheet of every scene in the hero loop, for reference/QA.
+{
+  const scale = 0.62;
+  const w = Math.round(SW * scale);
+  const h = Math.round(SH * scale);
+  const gap = 10;
+  const shots = [];
+  for (let i = 0; i < SCENES.length; i++) {
+    shots.push(
+      await sharp(await heroFrame(holdSpec(i))).resize(w, h).png().toBuffer(),
+    );
+  }
+  await sharp({
+    create: {
+      width: w + gap * 2,
+      height: (h + gap) * SCENES.length + gap,
+      channels: 4,
+      background: "#FFFFFF",
+    },
+  })
+    .composite(shots.map((input, i) => ({ input, left: gap, top: gap + i * (h + gap) })))
+    .png()
+    .toFile(join(outDir, "scenes-preview.png"));
+  console.log("scenes sheet:", SCENES.length, "scenes");
+}
 
 /* ---- trust badges ----------------------------------------------------------
  * One PNG per badge (assets/badges/<id>.png) so the builder UI can mix and
