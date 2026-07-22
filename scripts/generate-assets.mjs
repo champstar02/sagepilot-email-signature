@@ -519,32 +519,35 @@ writeFileSync(join(outDir, "sagepilot-hero.png"), await heroFrame(holdSpec(0)));
 {
   const w = 420;
   const h = 44;
-  const band = 120;
+  const band = 96;
+  // A glint, not a wash: soft shoulders around a bright narrow core.
   const frame = (x) => `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="s" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/>
-      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.085"/>
+      <stop offset="0.38" stop-color="#FFFFFF" stop-opacity="0.06"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.34"/>
+      <stop offset="0.62" stop-color="#FFFFFF" stop-opacity="0.06"/>
       <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
     </linearGradient>
   </defs>
   <rect width="${w}" height="${h}" fill="#181818"/>
-  <g transform="translate(${x} 0) skewX(-16)">
-    <rect x="${-band / 2}" y="-12" width="${band}" height="${h + 24}" fill="url(#s)"/>
+  <g transform="translate(${x} 0) skewX(-20)">
+    <rect x="${-band / 2}" y="-14" width="${band}" height="${h + 28}" fill="url(#s)"/>
   </g>
 </svg>`;
 
-  const steps = 18;
+  const steps = 20;
   const frames = [];
   const delays = [];
   for (let i = 0; i < steps; i++) {
-    const x = -90 + ((w + 180) * i) / (steps - 1);
+    const x = -80 + ((w + 160) * i) / (steps - 1);
     frames.push(await sharp(Buffer.from(frame(x))).png().toBuffer());
-    delays.push(55);
+    delays.push(45);
   }
-  // long rest between sweeps — the effect should register, not nag
+  // rest between sweeps — the glint should catch the eye, not nag
   frames.push(await sharp(Buffer.from(frame(-400))).png().toBuffer());
-  delays.push(4200);
+  delays.push(3400);
 
   await sharp(frames, { join: { animated: true } })
     .gif({ delay: delays, loop: 0, effort: 10, interFrameMaxError: 6 })
