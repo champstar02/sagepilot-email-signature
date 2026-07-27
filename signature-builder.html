@@ -121,6 +121,11 @@
   .window.dark a[style*="background-color:#E8FCF2"] { color: #E6E6E6 !important; }
   .window.dark table[style*="background-color:#FFFFFF"] { background-color: #191919 !important; border-color: #333330 !important; }
   .window.dark [style*="border-top:1px solid #F0F0EC"] { border-top-color: #2C2C2A !important; }
+  /* Dark-mode logo swap (preview only; the copied HTML uses <picture>). Both
+     logos carry the same inline display, so we only hide the non-matching one
+     and let the shown one keep its own display (block or inline-block). */
+  .window:not(.dark) .logo-dm { display: none !important; }
+  .window.dark .logo-lm { display: none !important; }
 
   /* ---- deploy note (brand-50 vignette panel) ---- */
   .note {
@@ -399,6 +404,20 @@ function sigHtml(forCopy) {
   const base = forCopy ? $("f-base").value.trim().replace(/\/+$/, "") : "assets";
   const logoFile = state.logo === "animated" ? "sagepilot-mark-animated.gif" : "sagepilot-mark.png";
 
+  // Dark-mode-aware logo. The "Sage" wordmark is near-black, and email clients
+  // never invert images, so on dark backgrounds it needs a white variant.
+  //  - copy: a <picture> whose dark <source> swaps in via prefers-color-scheme
+  //    (honoured by Apple Mail / iOS Mail; other clients keep the light <img>).
+  //  - preview: both images, toggled by the .window.dark simulation class.
+  const logoImg = (lightFile, darkFile, w, h, style) => {
+    const img = (src, cls) =>
+      `<img src="${base}/${src}" width="${w}" height="${h}" alt="Sagepilot"${cls ? ` class="${cls}"` : ""} style="${style}">`;
+    if (forCopy) {
+      return `<picture><source srcset="${base}/${darkFile}" media="(prefers-color-scheme: dark)">${img(lightFile)}</picture>`;
+    }
+    return img(lightFile, "logo-lm") + img(darkFile, "logo-dm");
+  };
+
   const site = "https://www.sagepilot.ai";
   const green = "#179D5D";
   const linkStyle = `color:#6F6F6F;text-decoration:none;`;
@@ -434,7 +453,14 @@ function sigHtml(forCopy) {
   // size a blink reads as a glitch rather than charm.
   const brandWord =
     `<a href="${site}" style="text-decoration:none;">` +
-    `<img src="${base}/sagepilot-logo-inline.png" width="64" height="15" alt="Sagepilot" style="display:inline-block;border:0;width:64px;height:15px;vertical-align:-3px;"></a>`;
+    logoImg(
+      "sagepilot-logo-inline.png",
+      "sagepilot-logo-inline-dark.png",
+      64,
+      15,
+      "display:inline-block;border:0;width:64px;height:15px;vertical-align:-3px;",
+    ) +
+    `</a>`;
 
   const heroFile = state.logo === "animated" ? "sagepilot-hero-animated.gif" : "sagepilot-hero.png";
 
@@ -469,15 +495,16 @@ ${badgeRow(base)}
 </table>`;
   }
 
-  // Compact: the full Sagepilot logo lockup (mark + wordmark) on the mint
-  // plate, so the brand reads at a glance without repeating "Sagepilot" in
-  // the role line.
+  // Compact: the full Sagepilot logo lockup (mark + wordmark). The "Sage"
+  // wordmark swaps to white in dark mode via logoImg.
   const lockupFile =
     state.logo === "animated" ? "sagepilot-logo-animated.gif" : "sagepilot-logo.png";
+  const lockupDarkFile =
+    state.logo === "animated" ? "sagepilot-logo-animated-dark.gif" : "sagepilot-logo-dark.png";
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="360" style="width:360px;font-family:'Instrument Sans',Helvetica,Arial,sans-serif;">
   <tr>
     <td style="vertical-align:middle;" width="128">
-      <a href="${site}" style="text-decoration:none;"><img src="${base}/${lockupFile}" width="128" height="30" alt="Sagepilot" style="display:block;border:0;width:128px;height:30px;"></a>
+      <a href="${site}" style="text-decoration:none;">${logoImg(lockupFile, lockupDarkFile, 128, 30, "display:block;border:0;width:128px;height:30px;")}</a>
     </td>
     <td width="16"></td>
     <td style="vertical-align:middle;border-left:2px solid #BCF6DA;padding-left:16px;">

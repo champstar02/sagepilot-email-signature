@@ -161,18 +161,36 @@ const LOGO_SCALE = 2; // 2x asset -> 128x30 display, the logo's natural size
 const LOCKUP_W = LOGO_W * LOGO_SCALE;
 const LOCKUP_H = LOGO_H * LOGO_SCALE;
 
-// Bare logo on transparency — no plate, no padding.
-function lockupSvgAt(faceOpts, scale) {
+// Dark-mode wordmark: the "Sage" letters are black `fill="black"` paths at
+// x >= 34 (the robot's black features are all x < 30 and the green "pilot"
+// letters are untouched). Email clients never invert images, so on dark
+// backgrounds those letters vanish — recolour just them to white.
+function darkenWordmark(src) {
+  return src.replace(/<path\b[^>]*?>/g, (tag) => {
+    const dm = tag.match(/\bd="M(-?[0-9.]+)/);
+    if (dm && parseFloat(dm[1]) >= 34 && /fill="(black|#000000|#000)"/.test(tag)) {
+      return tag.replace(/fill="(black|#000000|#000)"/, 'fill="#FFFFFF"');
+    }
+    return tag;
+  });
+}
+
+// Bare logo on transparency — no plate, no padding. `dark` swaps the "Sage"
+// wordmark to white for dark backgrounds.
+function lockupSvgAt(faceOpts, scale, dark = false) {
   const w = LOGO_W * scale;
   const h = LOGO_H * scale;
+  const src = dark ? darkenWordmark(logoInner) : logoInner;
   return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g transform="scale(${scale})">${applyFace(logoInner, faceOpts)}</g>
+  <g transform="scale(${scale})">${applyFace(src, faceOpts)}</g>
 </svg>`;
 }
-const lockupPng = (f) => sharp(Buffer.from(lockupSvgAt(f, LOGO_SCALE))).png().toBuffer();
+const lockupPng = (f, dark = false) =>
+  sharp(Buffer.from(lockupSvgAt(f, LOGO_SCALE, dark))).png().toBuffer();
 // Text-sized lockup for inline use in the role line: 128x30 asset, 64x15
 // display — 2x retina at the size of the surrounding 13px type.
-const inlineLogoPng = (f) => sharp(Buffer.from(lockupSvgAt(f, 1))).png().toBuffer();
+const inlineLogoPng = (f, dark = false) =>
+  sharp(Buffer.from(lockupSvgAt(f, 1, dark))).png().toBuffer();
 
 // Favicon-sized bare mark for the "sagepilot.ai" contact link. 32px asset,
 // 16px display. The face is bright green, so it holds up on dark backgrounds.
@@ -481,12 +499,19 @@ await sharp(tileFrames, { join: { animated: true } })
   .toFile(join(outDir, "sagepilot-mark-animated.gif"));
 writeFileSync(join(outDir, "sagepilot-mark.png"), await tilePng(OPEN));
 
-// Full-logo lockup, same blink beat as the avatar tile
+// Full-logo lockup, same blink beat as the avatar tile — light + dark (white
+// "Sage") variants of both the animated and static forms.
 const lockupFrames = await Promise.all(tileSeq.map((s) => lockupPng(s.f)));
 await sharp(lockupFrames, { join: { animated: true } })
   .gif({ delay: tileSeq.map((s) => s.ms), loop: 0, dither: 0, interFrameMaxError: 10 })
   .toFile(join(outDir, "sagepilot-logo-animated.gif"));
 writeFileSync(join(outDir, "sagepilot-logo.png"), await lockupPng(OPEN));
+
+const lockupFramesDark = await Promise.all(tileSeq.map((s) => lockupPng(s.f, true)));
+await sharp(lockupFramesDark, { join: { animated: true } })
+  .gif({ delay: tileSeq.map((s) => s.ms), loop: 0, dither: 0, interFrameMaxError: 10 })
+  .toFile(join(outDir, "sagepilot-logo-animated-dark.gif"));
+writeFileSync(join(outDir, "sagepilot-logo-dark.png"), await lockupPng(OPEN, true));
 await sharp(Buffer.from(faviconSvg)).png().toFile(join(outDir, "sagepilot-icon.png"));
 await sharp(Buffer.from(linkedinSvg)).png().toFile(join(outDir, "icon-linkedin.png"));
 await sharp(Buffer.from(globeSvg)).png().toFile(join(outDir, "icon-globe.png"));
@@ -494,6 +519,7 @@ await sharp(Buffer.from(globeSvg)).png().toFile(join(outDir, "icon-globe.png"));
 // Inline (text-sized) logo — static only: at 15px tall a blink reads as a
 // glitch, so the role line keeps a plain logo.
 writeFileSync(join(outDir, "sagepilot-logo-inline.png"), await inlineLogoPng(OPEN));
+writeFileSync(join(outDir, "sagepilot-logo-inline-dark.png"), await inlineLogoPng(OPEN, true));
 console.log(
   "logo lockup:",
   `${LOCKUP_W}x${LOCKUP_H}`,
