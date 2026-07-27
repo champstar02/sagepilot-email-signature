@@ -72,6 +72,18 @@
     box-shadow: 0 0 0 3px var(--brand-50);
   }
   .badge-warn { font-size: 12px; color: var(--faint); margin-top: 8px; }
+  /* ---- download images ---- */
+  .downloads { margin-top: 18px; border-top: 1px solid rgba(0,0,0,.08); padding-top: 14px; }
+  .dl-head { font-size: 12px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); }
+  .dl-head .hint { text-transform: none; letter-spacing: normal; font-weight: 400; }
+  .dl-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .dl-list a {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink);
+    text-decoration: none; background: #fff; border: 1px solid rgba(0,0,0,.12);
+    border-radius: 8px; padding: 6px 10px;
+  }
+  .dl-list a:hover { border-color: var(--brand-600); background: var(--brand-50); }
+  .dl-list a::before { content: "↓"; color: var(--brand-700); font-weight: 600; }
   .actions { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
   .btn {
     display: inline-flex; align-items: center; height: 40px; padding: 0 16px;
@@ -220,6 +232,11 @@
         <button class="btn ghost" id="copy-html">Copy HTML</button>
       </div>
       <div class="toast" id="toast"></div>
+
+      <div class="downloads">
+        <div class="dl-head">Download images <span class="hint">— if your mail client blocks the CDN, save these and drop them in place of the broken image</span></div>
+        <div class="dl-list" id="dl-list"></div>
+      </div>
     </div>
 
     <div class="preview-col">
@@ -535,10 +552,40 @@ function sigText() {
   return lines.join("\n");
 }
 
+// Every image file the current signature actually uses (imgs, dark <source>s,
+// and the button-shimmer background), as bare filenames.
+function currentAssetFiles() {
+  const holder = document.createElement("div");
+  holder.innerHTML = sigHtml(true);
+  const files = new Set();
+  holder.querySelectorAll("img[src]").forEach((i) => files.add(i.getAttribute("src")));
+  holder.querySelectorAll("source[srcset]").forEach((s) => files.add(s.getAttribute("srcset")));
+  holder.querySelectorAll('[style*="btn-shimmer"]').forEach((el) => {
+    const m = el.getAttribute("style").match(/url\('([^']+)'\)/);
+    if (m) files.add(m[1]);
+  });
+  // → path relative to this page's assets/ folder (same-origin, so download works)
+  return [...files].map((u) => "assets/" + u.split("/assets/").pop());
+}
+
+function renderDownloads() {
+  const host = $("dl-list");
+  host.innerHTML = "";
+  for (const path of currentAssetFiles()) {
+    const name = path.split("/").pop();
+    const a = document.createElement("a");
+    a.href = path;
+    a.download = name;
+    a.textContent = name;
+    host.appendChild(a);
+  }
+}
+
 function render() {
   const html = sigHtml(false);
   $("preview-light").innerHTML = html;
   $("preview-dark").innerHTML = html;
+  renderDownloads();
 }
 
 function toast(msg) {
