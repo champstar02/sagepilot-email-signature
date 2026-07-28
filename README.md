@@ -55,12 +55,12 @@ Email clients load images from a public URL. The assets are served from this
 repo (github.com/champstar02/sagepilot-email-signature) via the jsDelivr CDN —
 independent of the website codebase, nothing to deploy:
 
-- https://cdn.jsdelivr.net/gh/champstar02/sagepilot-email-signature@v19/assets/sagepilot-hero-animated.gif
-- https://cdn.jsdelivr.net/gh/champstar02/sagepilot-email-signature@v19/assets/sagepilot-mark-animated.gif
+- https://cdn.jsdelivr.net/gh/champstar02/sagepilot-email-signature@v20/assets/sagepilot-hero-animated.gif
+- https://cdn.jsdelivr.net/gh/champstar02/sagepilot-email-signature@v20/assets/sagepilot-mark-animated.gif
 
-URLs are pinned to the immutable `v19` tag (jsDelivr caches mutable `@main`
+URLs are pinned to the immutable `v20` tag (jsDelivr caches mutable `@main`
 refs unpredictably). After regenerating assets: commit + push, tag the new
-release (`git tag v20 && git push origin v20`), update the tag in
+release (`git tag v21 && git push origin v21`), update the tag in
 signature-builder.html's asset base URL, and re-copy signatures.
 
 ## Client notes
