@@ -192,6 +192,49 @@ const lockupPng = (f, dark = false) =>
 const inlineLogoPng = (f, dark = false) =>
   sharp(Buffer.from(lockupSvgAt(f, 1, dark))).png().toBuffer();
 
+// Logo on a chip: white pill + mint hairline (same grammar as the badges and
+// the hero ActionChips). The light background is baked into the image, so the
+// near-black "Sage" reads on ANY email background, dark mode included — one
+// asset, no dark-mode swap needed. `scale` is the 2x render factor.
+const CHIP_PADX = 12;
+const CHIP_PADY = 8;
+const CHIP_R = 9;
+function logoChipSvg(faceOpts, scale) {
+  const lw = LOGO_W * scale;
+  const lh = LOGO_H * scale;
+  const px = CHIP_PADX * scale;
+  const py = CHIP_PADY * scale;
+  const w = lw + px * 2;
+  const h = lh + py * 2;
+  const sw = Math.max(1.5, scale);
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="${sw / 2}" y="${sw / 2}" width="${w - sw}" height="${h - sw}" rx="${CHIP_R * scale}" fill="#FFFFFF" stroke="#DCEFE4" stroke-width="${sw}"/>
+  <g transform="translate(${px} ${py}) scale(${scale})">${applyFace(logoInner, faceOpts)}</g>
+</svg>`;
+}
+// display sizes (asset is 2x): compact chip, and a smaller inline chip
+const CHIP_W = Math.round((LOGO_W + CHIP_PADX * 2)); // scale 2 asset / 2 = this
+const CHIP_H = Math.round((LOGO_H + CHIP_PADY * 2));
+const logoChipPng = (f) => sharp(Buffer.from(logoChipSvg(f, 2))).png().toBuffer();
+const CHIP_IN_PADX = 8;
+const CHIP_IN_PADY = 5;
+function logoChipInlineSvg(faceOpts) {
+  // scale 1 asset (128 native = 2x of 64 display); smaller padding
+  const lw = LOGO_W,
+    lh = LOGO_H;
+  const px = CHIP_IN_PADX,
+    py = CHIP_IN_PADY;
+  const w = lw + px * 2,
+    h = lh + py * 2;
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="1" y="1" width="${w - 2}" height="${h - 2}" rx="7" fill="#FFFFFF" stroke="#DCEFE4" stroke-width="1.5"/>
+  <g transform="translate(${px} ${py})">${applyFace(logoInner, faceOpts)}</g>
+</svg>`;
+}
+const CHIP_IN_W = Math.round((LOGO_W + CHIP_IN_PADX * 2) / 2);
+const CHIP_IN_H = Math.round((LOGO_H + CHIP_IN_PADY * 2) / 2);
+const logoChipInlinePng = (f) => sharp(Buffer.from(logoChipInlineSvg(f))).png().toBuffer();
+
 // Favicon-sized bare mark for the "sagepilot.ai" contact link. 32px asset,
 // 16px display. The face is bright green, so it holds up on dark backgrounds.
 const FAVICON = 32;
@@ -520,6 +563,16 @@ await sharp(Buffer.from(globeSvg)).png().toFile(join(outDir, "icon-globe.png"));
 // glitch, so the role line keeps a plain logo.
 writeFileSync(join(outDir, "sagepilot-logo-inline.png"), await inlineLogoPng(OPEN));
 writeFileSync(join(outDir, "sagepilot-logo-inline-dark.png"), await inlineLogoPng(OPEN, true));
+
+// Logo-in-chip (dark-mode-proof, no swap needed): animated + static, plus a
+// small inline chip for the full variant's role line.
+const chipFrames = await Promise.all(tileSeq.map((s) => logoChipPng(s.f)));
+await sharp(chipFrames, { join: { animated: true } })
+  .gif({ delay: tileSeq.map((s) => s.ms), loop: 0, dither: 0, interFrameMaxError: 10 })
+  .toFile(join(outDir, "sagepilot-logo-chip-animated.gif"));
+writeFileSync(join(outDir, "sagepilot-logo-chip.png"), await logoChipPng(OPEN));
+writeFileSync(join(outDir, "sagepilot-logo-chip-inline.png"), await logoChipInlinePng(OPEN));
+console.log("logo chip:", `${CHIP_W}x${CHIP_H}`, "inline:", `${CHIP_IN_W}x${CHIP_IN_H}`);
 console.log(
   "logo lockup:",
   `${LOCKUP_W}x${LOCKUP_H}`,
@@ -567,7 +620,7 @@ writeFileSync(join(outDir, "sagepilot-hero.png"), await heroFrame(holdSpec(0)));
       <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
     </linearGradient>
   </defs>
-  <rect width="${w}" height="${h}" fill="#181818"/>
+  <rect width="${w}" height="${h}" fill="#179D5D"/>
   <g transform="translate(${x} 0) skewX(-20)">
     <rect x="${-band / 2}" y="-14" width="${band}" height="${h + 28}" fill="url(#s)"/>
   </g>

@@ -125,19 +125,11 @@
   .window.dark [style*="color:#C8C8C4"] { color: #6E6E6E !important; }
   .window.dark [style*="color:#179D5D"] { color: #2FCB7F !important; }
   .window.dark [style*="color:#1ECA77"] { color: #2FDB88 !important; }
-  /* The CTA keeps its shimmer GIF (opaque) in dark mode, so it stays dark with
-     white text — only plain ink fills invert. */
-  .window.dark [style*="background-color:#181818"]:not([style*="background-image"]) { background-color: #F2F2F2 !important; }
-  .window.dark td[style*="background-color:#181818"]:not([style*="background-image"]) a { color: #181818 !important; }
+  /* The CTA is green with a baked-in shimmer GIF, so it does not invert. */
   .window.dark [style*="background-color:#E8FCF2"] { background-color: #16211B !important; border-color: #2C4437 !important; }
   .window.dark a[style*="background-color:#E8FCF2"] { color: #E6E6E6 !important; }
   .window.dark table[style*="background-color:#FFFFFF"] { background-color: #191919 !important; border-color: #333330 !important; }
   .window.dark [style*="border-top:1px solid #F0F0EC"] { border-top-color: #2C2C2A !important; }
-  /* Dark-mode logo swap (preview only; the copied HTML uses <picture>). Both
-     logos carry the same inline display, so we only hide the non-matching one
-     and let the shown one keep its own display (block or inline-block). */
-  .window:not(.dark) .logo-dm { display: none !important; }
-  .window.dark .logo-lm { display: none !important; }
 
   /* ---- deploy note (brand-50 vignette panel) ---- */
   .note {
@@ -421,19 +413,11 @@ function sigHtml(forCopy) {
   const base = forCopy ? $("f-base").value.trim().replace(/\/+$/, "") : "assets";
   const logoFile = state.logo === "animated" ? "sagepilot-mark-animated.gif" : "sagepilot-mark.png";
 
-  // Dark-mode-aware logo. The "Sage" wordmark is near-black, and email clients
-  // never invert images, so on dark backgrounds it needs a white variant.
-  //  - copy: a <picture> whose dark <source> swaps in via prefers-color-scheme
-  //    (honoured by Apple Mail / iOS Mail; other clients keep the light <img>).
-  //  - preview: both images, toggled by the .window.dark simulation class.
-  const logoImg = (lightFile, darkFile, w, h, style) => {
-    const img = (src, cls) =>
-      `<img src="${base}/${src}" width="${w}" height="${h}" alt="Sagepilot"${cls ? ` class="${cls}"` : ""} style="${style}">`;
-    if (forCopy) {
-      return `<picture><source srcset="${base}/${darkFile}" media="(prefers-color-scheme: dark)">${img(lightFile)}</picture>`;
-    }
-    return img(lightFile, "logo-lm") + img(darkFile, "logo-dm");
-  };
+  // The logo sits on a chip (white pill + mint hairline). The light background
+  // is baked into the image, so the near-black "Sage" reads on ANY email
+  // background — dark mode included, every client, no swap needed.
+  const logoImg = (file, w, h, style) =>
+    `<img src="${base}/${file}" width="${w}" height="${h}" alt="Sagepilot" style="${style}">`;
 
   const site = "https://www.sagepilot.ai";
   const green = "#179D5D";
@@ -471,11 +455,10 @@ function sigHtml(forCopy) {
   const brandWord =
     `<a href="${site}" style="text-decoration:none;">` +
     logoImg(
-      "sagepilot-logo-inline.png",
-      "sagepilot-logo-inline-dark.png",
-      64,
-      15,
-      "display:inline-block;border:0;width:64px;height:15px;vertical-align:-3px;",
+      "sagepilot-logo-chip-inline.png",
+      72,
+      20,
+      "display:inline-block;border:0;width:72px;height:20px;vertical-align:-5px;",
     ) +
     `</a>`;
 
@@ -499,7 +482,7 @@ function sigHtml(forCopy) {
   <tr>
     <td style="padding-top:12px;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-        <td style="background-color:#181818;background-image:url('${base}/btn-shimmer.gif');background-repeat:no-repeat;background-position:left center;border-radius:6px;">
+        <td style="background-color:#179D5D;background-image:url('${base}/btn-shimmer.gif');background-repeat:no-repeat;background-position:left center;border-radius:6px;">
           <a href="${esc(demo)}" style="display:inline-block;padding:10px 16px;font-size:13.5px;line-height:1;font-weight:500;color:#FFFFFF;text-decoration:none;border-radius:6px;white-space:nowrap;">${cta}&nbsp;&nbsp;&#8594;</a>
         </td>
       </tr></table>
@@ -512,16 +495,14 @@ ${badgeRow(base)}
 </table>`;
   }
 
-  // Compact: the full Sagepilot logo lockup (mark + wordmark). The "Sage"
-  // wordmark swaps to white in dark mode via logoImg.
+  // Compact: the full Sagepilot logo lockup on a chip, so "Sage" stays crisp
+  // on any background including dark mode.
   const lockupFile =
-    state.logo === "animated" ? "sagepilot-logo-animated.gif" : "sagepilot-logo.png";
-  const lockupDarkFile =
-    state.logo === "animated" ? "sagepilot-logo-animated-dark.gif" : "sagepilot-logo-dark.png";
+    state.logo === "animated" ? "sagepilot-logo-chip-animated.gif" : "sagepilot-logo-chip.png";
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="360" style="width:360px;font-family:'Instrument Sans',Helvetica,Arial,sans-serif;">
   <tr>
-    <td style="vertical-align:middle;" width="128">
-      <a href="${site}" style="text-decoration:none;">${logoImg(lockupFile, lockupDarkFile, 128, 30, "display:block;border:0;width:128px;height:30px;")}</a>
+    <td style="vertical-align:middle;" width="152">
+      <a href="${site}" style="text-decoration:none;">${logoImg(lockupFile, 152, 46, "display:block;border:0;width:152px;height:46px;")}</a>
     </td>
     <td width="16"></td>
     <td style="vertical-align:middle;border-left:2px solid #BCF6DA;padding-left:16px;">
