@@ -281,11 +281,11 @@ const SH = 192;
 // letterhead baseline (robot bottom-left, wordmark bottom-right). Baking it in
 // means the logo is dark-mode-proof (the card background travels with it), so
 // no separate logo image, chip, or swap is needed.
-const WM_SCALE = 0.68; // logo native 128x30 -> 87x20
+const WM_SCALE = 0.95; // logo native 128x30 -> 122x28.5 (2x asset -> ~61x14 display)
 const WM_W = LOGO_W * WM_SCALE;
 const WM_H = LOGO_H * WM_SCALE;
-const WM_X = SW - WM_W - 22;
-const WM_Y = 150;
+const WM_X = SW - WM_W - 24;
+const WM_Y = SH - WM_H - 16;
 const ROBOT_X = 40;
 const ROBOT_Y = 42;
 const ROBOT_PX = 116;
@@ -342,8 +342,8 @@ function glyphField(phase = 0) {
       // but email type is small, so damp it over the robot and headline zone
       // and let it come to full strength on the open right side.
       alpha *= 0.34 + 0.66 * Math.min(1, Math.max(0, (x - 470) / 190));
-      // Fade glyphs out behind the bottom-right wordmark so it reads cleanly.
-      if (x > WM_X - 14 && y > WM_Y - 8) alpha *= 0.12;
+      // Clear glyphs behind the bottom-right wordmark so it reads crisply.
+      if (x > WM_X - 20 && y > WM_Y - 12) alpha *= 0.06;
       items.push(
         `<text x="${x}" y="${y + fontPx * 0.35}" text-anchor="middle" font-family="Menlo, Monaco, monospace" font-size="${fontPx}" fill="${color}" opacity="${alpha.toFixed(3)}">${escXml(ch)}</text>`,
       );
