@@ -449,29 +449,17 @@ function sigHtml(forCopy) {
   const rightBits = [`<a href="mailto:${esc(email)}" style="${linkStyle}">${esc(email)}</a>`];
   if (phone) rightBits.push(`<span style="color:#6F6F6F;">${esc(phone)}</span>`);
 
-  // The real logo at text size instead of typed-out "Sagepilot" — 64x15
-  // display from a 128x30 asset, so it stays 2x crisp. Always static: at this
-  // size a blink reads as a glitch rather than charm.
-  const brandWord =
-    `<a href="${site}" style="text-decoration:none;">` +
-    logoImg(
-      "sagepilot-logo-chip-inline.png",
-      72,
-      20,
-      "display:inline-block;border:0;width:72px;height:20px;vertical-align:-5px;",
-    ) +
-    `</a>`;
-
   const heroFile = state.logo === "animated" ? "sagepilot-hero-animated.gif" : "sagepilot-hero.png";
 
   // Three composed blocks: typographic identity, ONE hero scene (the robot
-  // working), then a single action line — ink CTA left, quiet links right.
+  // working, with the sagepilot wordmark baked in), then a single action line.
+  // The hero carries the brand, so the role line stays plain text.
   if (state.variant === "full") {
     return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="420" style="width:420px;font-family:'Instrument Sans',Helvetica,Arial,sans-serif;">
   <tr>
     <td colspan="2">
       <div style="font-size:17px;line-height:23px;font-weight:600;letter-spacing:-0.3px;color:#181818;">${name}${liIcon}</div>
-      <div style="font-size:13px;line-height:19px;color:#6F6F6F;padding-top:1px;">${role}${role ? ",&nbsp;" : ""}${brandWord}</div>
+      <div style="font-size:13px;line-height:19px;color:#6F6F6F;padding-top:1px;">${role}</div>
     </td>
   </tr>
   <tr>
