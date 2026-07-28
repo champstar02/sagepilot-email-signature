@@ -277,18 +277,21 @@ async function text(str, { font, color, alpha = 100 }) {
  */
 const SW = 840;
 const SH = 192;
-// Left column: the "sagepilot" wordmark stacked above the robot agent avatar.
-// Baking the wordmark into the mint card means the logo is dark-mode-proof
-// (the card background travels with it) — no separate logo image needed.
-const WM_SCALE = 0.92; // logo native 128x30 -> 118x28
-const WM_X = 34;
-const WM_Y = 20;
+// The "sagepilot" wordmark is baked into the mint card, bottom-right — a
+// letterhead baseline (robot bottom-left, wordmark bottom-right). Baking it in
+// means the logo is dark-mode-proof (the card background travels with it), so
+// no separate logo image, chip, or swap is needed.
+const WM_SCALE = 0.68; // logo native 128x30 -> 87x20
+const WM_W = LOGO_W * WM_SCALE;
+const WM_H = LOGO_H * WM_SCALE;
+const WM_X = SW - WM_W - 22;
+const WM_Y = 150;
 const ROBOT_X = 40;
-const ROBOT_Y = 60;
-const ROBOT_PX = 108;
-const TX = 196; // text zone left
-const HY = 52; // headline top
-const CY = 116; // chip top
+const ROBOT_Y = 42;
+const ROBOT_PX = 116;
+const TX = 200; // text zone left
+const HY = 46; // headline top
+const CY = 106; // chip top
 
 const SPARKLE_PATHS = `<path d="M12.5 2.5l1.1 3.1a3 3 0 0 0 1.8 1.8l3.1 1.1-3.1 1.1a3 3 0 0 0-1.8 1.8l-1.1 3.1-1.1-3.1a3 3 0 0 0-1.8-1.8L6.5 8.5l3.1-1.1a3 3 0 0 0 1.8-1.8l1.1-3.1z"/>
 <path d="M5 12l.65 1.85a2 2 0 0 0 1.2 1.2L8.7 15.7l-1.85.65a2 2 0 0 0-1.2 1.2L5 19.4l-.65-1.85a2 2 0 0 0-1.2-1.2L1.3 15.7l1.85-.65a2 2 0 0 0 1.2-1.2L5 12z"/>`;
@@ -339,6 +342,8 @@ function glyphField(phase = 0) {
       // but email type is small, so damp it over the robot and headline zone
       // and let it come to full strength on the open right side.
       alpha *= 0.34 + 0.66 * Math.min(1, Math.max(0, (x - 470) / 190));
+      // Fade glyphs out behind the bottom-right wordmark so it reads cleanly.
+      if (x > WM_X - 14 && y > WM_Y - 8) alpha *= 0.12;
       items.push(
         `<text x="${x}" y="${y + fontPx * 0.35}" text-anchor="middle" font-family="Menlo, Monaco, monospace" font-size="${fontPx}" fill="${color}" opacity="${alpha.toFixed(3)}">${escXml(ch)}</text>`,
       );
@@ -358,8 +363,8 @@ function heroBase({ fieldPhase = 0, pulse = false, faceOpts = OPEN } = {}) {
   </defs>
   <rect x="1" y="1" width="${SW - 2}" height="${SH - 2}" rx="30" fill="url(#mint)" stroke="#CFEDDD" stroke-width="2"/>
   <g clip-path="url(#card)">${glyphField(fieldPhase)}</g>
-  <g transform="translate(${WM_X} ${WM_Y}) scale(${WM_SCALE})">${logoInner}</g>
   <g transform="translate(${ROBOT_X} ${ROBOT_Y}) scale(${s})">${face(faceOpts)}</g>
+  <g transform="translate(${WM_X} ${WM_Y}) scale(${WM_SCALE})">${logoInner}</g>
   <circle cx="${dotX}" cy="${dotY}" r="${pulse ? 15 : 12}" fill="#22E185" stroke="#F4FBF7" stroke-width="5" opacity="${pulse ? 0.8 : 1}"/>
 </svg>`;
 }
