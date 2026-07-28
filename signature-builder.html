@@ -208,6 +208,7 @@
       <div class="seg" id="seg-variant">
         <button data-v="full" class="on">Full</button>
         <button data-v="compact">Compact</button>
+        <button data-v="minimal">Minimal</button>
       </div>
       <label>Logo</label>
       <div class="seg" id="seg-logo">
@@ -480,6 +481,24 @@ function sigHtml(forCopy) {
     </td>
   </tr>
 ${badgeRow(base)}
+</table>`;
+  }
+
+  // Minimal: name + role + contacts as plain text on white, no border, no
+  // logo image, no hero. All text, so it inverts naturally in dark mode and
+  // works in every client. "Sagepilot" is two-tone text (not an image).
+  if (state.variant === "minimal") {
+    const brandText =
+      `<span style="font-weight:600;color:#181818;">Sage</span>` +
+      `<span style="font-weight:600;color:#179D5D;">pilot</span>`;
+    return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-family:'Instrument Sans',Helvetica,Arial,sans-serif;">
+  <tr>
+    <td>
+      <div style="font-size:16px;line-height:22px;font-weight:600;letter-spacing:-0.2px;color:#181818;">${name}${liIcon}</div>
+      <div style="font-size:13px;line-height:19px;color:#6F6F6F;padding-top:2px;">${role}${role ? ",&nbsp;" : ""}${brandText}</div>
+      <div style="font-size:12.5px;line-height:19px;padding-top:6px;">${contactBits.join(dot)}</div>
+    </td>
+  </tr>
 </table>`;
   }
 
