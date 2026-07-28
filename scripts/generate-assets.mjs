@@ -281,7 +281,7 @@ const SH = 192;
 // letterhead baseline (robot bottom-left, wordmark bottom-right). Baking it in
 // means the logo is dark-mode-proof (the card background travels with it), so
 // no separate logo image, chip, or swap is needed.
-const WM_SCALE = 0.95; // logo native 128x30 -> 122x28.5 (2x asset -> ~61x14 display)
+const WM_SCALE = 1.35; // as large as the bottom-right space allows
 const WM_W = LOGO_W * WM_SCALE;
 const WM_H = LOGO_H * WM_SCALE;
 const WM_X = SW - WM_W - 24;
